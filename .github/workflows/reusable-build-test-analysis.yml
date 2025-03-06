@@ -1,0 +1,148 @@
+on:
+  workflow_call:
+    inputs:
+      solution-path:
+        type: string
+        description: 'The relative path to the .sln file (default: current directory)'
+        required: false
+        default: '.'
+      solution-name:
+        type: string
+        description: 'The name of the solution file (e.g., MyApp.sln)'
+        required: true
+      report-coverage-title:
+        type: string
+        description: 'A title for the coverage report (default: Reporte de Cobertura)'
+        required: false
+        default: 'Reporte de Cobertura'
+
+env:
+  DOTNET_VERSION: '8.0.x' # The .NET SDK version to use
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install dependencies
+        run: dotnet restore ${{ inputs.solution-path }}/${{ inputs.solution-name }}
+
+      - name: Run build
+        run: dotnet build ${{ inputs.solution-path }}/${{ inputs.solution-name }} --configuration Release
+
+  analysis:
+    name: Analysis
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Run code analysis report
+      run: dotnet format ${{ inputs.solution-path }}/${{ inputs.solution-name }} --verify-no-changes --verbosity diagnostic --report ./analysis
+
+    - name: Upload code analysis report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Code Analysis Report
+        path: ${{ inputs.solution-path }}/analysis/format-report.json
+        retention-days: 1
+
+  test:
+    name: Test
+    permissions: write-all
+    needs: build
+    runs-on: ubuntu-latest
+      
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install Dependencies
+        run: dotnet restore ${{ inputs.solution-path }}/${{ inputs.solution-name }}
+
+      - name: Run Build
+        run: dotnet build ${{ inputs.solution-path }}/${{ inputs.solution-name }} --configuration Release
+
+      - name: Generate Results Report
+        run: dotnet test ${{ inputs.solution-path }}/${{ inputs.solution-name }} --configuration Release --no-build --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results
+
+      - name: Uploaded Results Report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Uploaded Results Report
+          path: ${{ inputs.solution-path }}/test-results/test-results*
+          reporter: dotnet-trx
+          path-replace-backslashes: false
+          list-suites: all
+          list-tests: all
+          max-annotations: 10
+          fail-on-error: true
+          fail-on-empty: true
+          only-summary: false
+
+      - name: Generate Coverage Report
+        run: dotnet test ${{ inputs.solution-path }}/${{ inputs.solution-name }} --configuration Release --no-build --verbosity normal --results-directory ./coverage --settings .runsettings
+
+      - name: Join Coverage Reports
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.3.9
+        with:
+          reports: ${{ inputs.solution-path }}/coverage/**/coverage.cobertura.xml
+          targetdir: coverage-report
+          reporttypes: 'Html;Cobertura'
+          verbosity: 'Verbose'
+          tag: '${{ github.run_number }}_${{ github.run_id }}'
+          title: '${{ inputs.report-coverage-title }}'
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: Coverage Report       
+          path: coverage-report
+
+      - name: Check Coverage
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: coverage-report/Cobertura.xml
+          badge: true
+          fail_below_min: true
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: true
+          indicators: true
+          output: both
+          thresholds: '85 90'
+
+      - name: Add Coverage PR Comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request' && always()
+        with:
+          recreate: true
+          path: code-coverage-results.md
+
+      - name: Write to Job Summary
+        if: always()
+        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
+          git tag --annotate "$BUMPED" --message "via GitHub Actions"
+          git push origin "$BUMPED"
