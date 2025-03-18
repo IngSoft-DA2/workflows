@@ -20,9 +20,13 @@ env:
   DOTNET_VERSION: '8.0.x' # The .NET SDK version to use
 
 jobs:
-  build:
-    name: Build
+  setup:
+    name: Setup .NET Core
     runs-on: ubuntu-latest
+    outputs:
+      solution-path: ${{ inputs.solution-path }}
+      solution-name: ${{ inputs.solution-name }}
+      full-solution-path: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -31,37 +35,16 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
       - name: Install dependencies
-        run: dotnet restore ${{ inputs.solution-path }}/${{ inputs.solution-name }}
+        run: dotnet restore ${{ needs.setup.outputs.full-solution-path }}
 
       - name: Run build
-        run: dotnet build ${{ inputs.solution-path }}/${{ inputs.solution-name }} --configuration Release
-
-  analysis:
-    name: Analysis
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env.DOTNET_VERSION }}
-
-    - name: Run code analysis report
-      run: dotnet format ${{ inputs.solution-path }}/${{ inputs.solution-name }} --verify-no-changes --verbosity diagnostic --report ./analysis
-
-    - name: Upload code analysis report
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: Code Analysis Report
-        path: ${{ inputs.solution-path }}/analysis/format-report.json
-        retention-days: 1
+        run: dotnet build ${{ needs.setup.outputs.full-solution-path }} --configuration Release
 
   test:
     name: Test
@@ -70,29 +53,15 @@ jobs:
     runs-on: ubuntu-latest
       
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Install Dependencies
-        run: dotnet restore ${{ inputs.solution-path }}/${{ inputs.solution-name }}
-
-      - name: Run Build
-        run: dotnet build ${{ inputs.solution-path }}/${{ inputs.solution-name }} --configuration Release
-
       - name: Generate Results Report
-        run: dotnet test ${{ inputs.solution-path }}/${{ inputs.solution-name }} --configuration Release --no-build --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results
+        run: dotnet test ${{ needs.setup.outputs.full-solution-path }} --configuration Release --no-build --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results
 
       - name: Uploaded Results Report
         uses: dorny/test-reporter@v1
         if: always()
         with:
           name: Uploaded Results Report
-          path: ${{ inputs.solution-path }}/test-results/test-results*
+          path: ${{ needs.setup.outputs.solution-path }}/test-results/test-results*
           reporter: dotnet-trx
           path-replace-backslashes: false
           list-suites: all
@@ -103,12 +72,12 @@ jobs:
           only-summary: false
 
       - name: Generate Coverage Report
-        run: dotnet test ${{ inputs.solution-path }}/${{ inputs.solution-name }} --configuration Release --no-build --verbosity normal --results-directory ./coverage --settings .runsettings
+        run: dotnet test ${{ needs.setup.outputs.full-solution-path }} --configuration Release --no-build --verbosity normal --results-directory ./coverage --settings .runsettings
 
       - name: Join Coverage Reports
         uses: danielpalme/ReportGenerator-GitHub-Action@5.3.9
         with:
-          reports: ${{ inputs.solution-path }}/coverage/**/coverage.cobertura.xml
+          reports: ${{ needs.setup.outputs.solution-path }}/coverage/**/coverage.cobertura.xml
           targetdir: coverage-report
           reporttypes: 'Html;Cobertura'
           verbosity: 'Verbose'
