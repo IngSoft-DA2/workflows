@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup .NET
-        uses: IngSoft-DA2/workflows/.github/workflows/reusable-setup-net.yml@main
+        uses: ./.github/workflows/reusable-setup-net.yml
         with:
           solution-path: ${{ inputs.solution-path }}
           solution-name: ${{ inputs.solution-name }}
