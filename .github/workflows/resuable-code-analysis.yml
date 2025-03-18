@@ -13,15 +13,14 @@ on:
 
 env:
   DOTNET_VERSION: '8.0.x' # The .NET SDK version to use
+  SOLUTION_PATH: ${{ inputs.solution-path }}
+  SOLUTION_NAME: ${{ inputs.solution-name }}
+  FULL_SOLUTION_PATH: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
 
 jobs:
   setup:
     name: Setup .NET Core
     runs-on: ubuntu-latest
-    outputs:
-      solution-path: ${{ inputs.solution-path }}
-      solution-name: ${{ inputs.solution-name }}
-      full-solution-path: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -36,10 +35,10 @@ jobs:
     needs: setup
     steps:
       - name: Install dependencies
-        run: dotnet restore ${{ needs.setup.outputs.full-solution-path }}
+        run: dotnet restore ${{ ENV.FULL_SOLUTION_PATH }}
 
       - name: Run build
-        run: dotnet build ${{ needs.setup.outputs.full-solution-path }} --configuration Release
+        run: dotnet build ${{ ENV.FULL_SOLUTION_PATH }} --configuration Release
 
   analysis:
     name: Analysis
@@ -48,12 +47,12 @@ jobs:
 
     steps:
     - name: Run code analysis report
-      run: dotnet format ${{ needs.setup.outputs.full-solution-path }} --verify-no-changes --verbosity diagnostic --report ./analysis
+      run: dotnet format ${{ ENV.FULL_SOLUTION_PATH }} --verify-no-changes --verbosity diagnostic --report ./analysis
 
     - name: Upload code analysis report
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: Code Analysis Report
-        path: ${{ needs.setup.outputs.solution-path }}/analysis/format-report.json
+        path: ${{ ENV.SOLUTION_PATH }}/analysis/format-report.json
         retention-days: 1
