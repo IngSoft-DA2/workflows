@@ -2,7 +2,7 @@ name: Tag
 on:
   workflow_call:
     inputs:
-      major:
+      mayor:
         type: string
         description: Branch to upgrade mayor version
         required: true
