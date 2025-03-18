@@ -1,0 +1,32 @@
+on:
+  workflow_call:
+    inputs:
+      solution-path:
+        type: string
+        description: 'The relative path to the .sln file (default: current directory)'
+        required: false
+        default: '.'
+      solution-name:
+        type: string
+        description: 'The name of the solution file (e.g., MyApp.sln)'
+        required: true
+
+env:
+  DOTNET_VERSION: '8.0.x' # The .NET SDK version to use
+  SOLUTION_PATH: ${{ inputs.solution-path }}
+  SOLUTION_NAME: ${{ inputs.solution-name }}
+  FULL_SOLUTION_PATH: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
+
+jobs:
+  setup:
+    name: Setup .NET
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
