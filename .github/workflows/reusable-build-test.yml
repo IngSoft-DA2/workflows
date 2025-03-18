@@ -45,7 +45,7 @@ jobs:
       
     steps:
       - name: Setup .NET
-        uses: ./reusable-setup-net.yml
+        uses: IngSoft-DA2/workflows/.github/workflows/reusable-setup-net.yml@main
         with:
           solution-path: ${{ inputs.solution-path }}
           solution-name: ${{ inputs.solution-name }}

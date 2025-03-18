@@ -16,30 +16,13 @@ env:
   FULL_SOLUTION_PATH: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
 
 jobs:
-  build:
-    name: Build
+  analysis:
+    name: Analysis
     runs-on: ubuntu-latest
+
     steps:
       - name: Setup .NET
         uses: IngSoft-DA2/workflows/.github/workflows/reusable-setup-net.yml@main
-        with:
-          solution-path: ${{ inputs.solution-path }}
-          solution-name: ${{ inputs.solution-name }}
-
-      - name: Install dependencies
-        run: dotnet restore ${{ ENV.FULL_SOLUTION_PATH }}
-
-      - name: Run build
-        run: dotnet build ${{ ENV.FULL_SOLUTION_PATH }} --configuration Release
-
-  analysis:
-    name: Analysis
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Setup .NET
-        uses: ./reusable-setup-net.yml
         with:
           solution-path: ${{ inputs.solution-path }}
           solution-name: ${{ inputs.solution-name }}
