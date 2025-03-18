@@ -19,16 +19,17 @@ env:
 
 jobs:
   setup:
-    name: Setup .NET Core
+    name: Setup .NET
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET Core
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+          
   build:
     name: Build
     runs-on: ubuntu-latest
