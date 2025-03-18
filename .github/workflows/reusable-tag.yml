@@ -4,11 +4,16 @@ on:
     inputs:
       major:
         type: string
-        default: main
         description: Branch to upgrade mayor version
+        required: true
       minor:
         type: string
         description: Branch to upgrade minor version
+        required: true
+      patch:
+       type: string
+       description: Branch to upgrade patch version
+       required: true
 
 jobs:
   tag:
@@ -63,17 +68,19 @@ jobs:
           fi
 
           if [ "${{ github.ref_name }}" == "${{ inputs.mayor }}" ]; then
-            # Bump the major version for mayor branch
+            # Bump the major version
             BUMPED=$(echo $LATEST | awk -F. '{ print ($1 + 1) ".0.0" }')
           
           elif [ "${{ github.ref_name }}" == "${{ inputs.minor }}" ]; then
-            # Bump the major version for mayor branch
+            # Bump the major version
             BUMPED=$(echo $LATEST | awk -F. '{ print $1 "." ($2 + 1) ".0" }')
-          
-          elif echo $LATEST | egrep '^[0-9]+\.[0-9]+$'; then
-            BUMPED="${LATEST}.0"
-          else
+
+          elif [ "${{ github.ref_name }}" == "${{ inputs.patch }}"]; then
+            # Bump the patch version
             BUMPED=$(echo $LATEST | awk -F. '{ print $1 "." $2 "." ($3 + 1) }')
+          
+          # elif echo $LATEST | egrep '^[0-9]+\.[0-9]+$'; then
+          #  BUMPED="${LATEST}.0"
           fi
           
           echo "bumping ${LATEST} to ${BUMPED}"
