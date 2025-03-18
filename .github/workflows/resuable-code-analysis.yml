@@ -21,6 +21,7 @@ jobs:
     outputs:
       solution-path: ${{ inputs.solution-path }}
       solution-name: ${{ inputs.solution-name }}
+      full-solution-path: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -35,10 +36,10 @@ jobs:
     needs: setup
     steps:
       - name: Install dependencies
-        run: dotnet restore ${{ needs.setup.outputs.solution-path }}/${{ needs.setup.outputs.solution-name }}
+        run: dotnet restore ${{ needs.setup.outputs.full-solution-path }}
 
       - name: Run build
-        run: dotnet build ${{ needs.setup.outputs.solution-path }}/${{ needs.setup.outputs.solution-name }} --configuration Release
+        run: dotnet build ${{ needs.setup.outputs.full-solution-path }} --configuration Release
 
   analysis:
     name: Analysis
@@ -47,7 +48,7 @@ jobs:
 
     steps:
     - name: Run code analysis report
-      run: dotnet format ${{ needs.setup.outputs.solution-path }}/${{ needs.setup.outputs.solution-name }} --verify-no-changes --verbosity diagnostic --report ./analysis
+      run: dotnet format ${{ needs.setup.outputs.full-solution-path }} --verify-no-changes --verbosity diagnostic --report ./analysis
 
     - name: Upload code analysis report
       if: always()
