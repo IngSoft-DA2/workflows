@@ -21,11 +21,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Setup .NET
-        uses: IngSoft-DA2/workflows/.github/workflows/reusable-setup-net.yml@main
+        uses: actions/setup-dotnet@v4
         with:
-          solution-path: ${{ inputs.solution-path }}
-          solution-name: ${{ inputs.solution-name }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
+
       - name: Run code analysis report
         run: dotnet format ${{ ENV.FULL_SOLUTION_PATH }} --verify-no-changes --verbosity diagnostic --report ./analysis
 

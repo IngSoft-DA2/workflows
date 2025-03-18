@@ -25,11 +25,14 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Setup .NET
-        uses: IngSoft-DA2/workflows/.github/workflows/reusable-setup-net.yml@main
+        uses: actions/setup-dotnet@v4
         with:
-          solution-path: ${{ inputs.solution-path }}
-          solution-name: ${{ inputs.solution-name }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
 
       - name: Install dependencies
         run: dotnet restore ${{ env.FULL_SOLUTION_PATH }}
@@ -44,11 +47,14 @@ jobs:
     runs-on: ubuntu-latest
       
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Setup .NET
-        uses: IngSoft-DA2/workflows/.github/workflows/reusable-setup-net.yml@main
+        uses: actions/setup-dotnet@v4
         with:
-          solution-path: ${{ inputs.solution-path }}
-          solution-name: ${{ inputs.solution-name }}
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
 
       - name: Generate Results Report
         run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --no-build --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results
