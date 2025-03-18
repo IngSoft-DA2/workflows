@@ -18,15 +18,14 @@ on:
 
 env:
   DOTNET_VERSION: '8.0.x' # The .NET SDK version to use
+  SOLUTION_PATH: ${{ inputs.solution-path }}
+  SOLUTION_NAME: ${{ inputs.solution-name }}
+  FULL_SOLUTION_PATH: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
 
 jobs:
   setup:
     name: Setup .NET Core
     runs-on: ubuntu-latest
-    outputs:
-      solution-path: ${{ inputs.solution-path }}
-      solution-name: ${{ inputs.solution-name }}
-      full-solution-path: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -41,10 +40,10 @@ jobs:
     needs: setup
     steps:
       - name: Install dependencies
-        run: dotnet restore ${{ needs.setup.outputs.full-solution-path }}
+        run: dotnet restore ${{ env.FULL_SOLUTION_PATH }}
 
       - name: Run build
-        run: dotnet build ${{ needs.setup.outputs.full-solution-path }} --configuration Release
+        run: dotnet build ${{ env.FULL_SOLUTION_PATH }} --configuration Release
 
   test:
     name: Test
@@ -54,14 +53,14 @@ jobs:
       
     steps:
       - name: Generate Results Report
-        run: dotnet test ${{ needs.setup.outputs.full-solution-path }} --configuration Release --no-build --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results
+        run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --no-build --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results
 
       - name: Uploaded Results Report
         uses: dorny/test-reporter@v1
         if: always()
         with:
           name: Uploaded Results Report
-          path: ${{ needs.setup.outputs.solution-path }}/test-results/test-results*
+          path: ${{ env.SOLUTION_PATH }}/test-results/test-results*
           reporter: dotnet-trx
           path-replace-backslashes: false
           list-suites: all
@@ -72,12 +71,12 @@ jobs:
           only-summary: false
 
       - name: Generate Coverage Report
-        run: dotnet test ${{ needs.setup.outputs.full-solution-path }} --configuration Release --no-build --verbosity normal --results-directory ./coverage --settings .runsettings
+        run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --no-build --verbosity normal --results-directory ./coverage --settings .runsettings
 
       - name: Join Coverage Reports
         uses: danielpalme/ReportGenerator-GitHub-Action@5.3.9
         with:
-          reports: ${{ needs.setup.outputs.solution-path }}/coverage/**/coverage.cobertura.xml
+          reports: ${{ env.SOLUTION_PATH }}/coverage/**/coverage.cobertura.xml
           targetdir: coverage-report
           reporttypes: 'Html;Cobertura'
           verbosity: 'Verbose'
