@@ -34,6 +34,12 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
           cache: true
 
+      - name: Generate dependencies lock file if missing
+        run: |
+          if [ ! -f "${{ inputs.solution-path }}/packages.lock.json" ]; then
+            dotnet restore --use-lock-file ${{ env.FULL_SOLUTION_PATH }}
+          fi
+
       - name: Install dependencies
         run: dotnet restore ${{ env.FULL_SOLUTION_PATH }}
 
@@ -55,6 +61,12 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
           cache: true
+
+      - name: Generate dependencies lock file if missing
+        run: |
+          if [ ! -f "${{ inputs.solution-path }}/packages.lock.json" ]; then
+            dotnet restore --use-lock-file ${{ env.FULL_SOLUTION_PATH }}
+          fi
 
       - name: Generate Results Report
         run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --no-build --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results
