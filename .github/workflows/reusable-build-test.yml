@@ -53,9 +53,12 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+      
+      - name: Build in Release
+        run: dotnet build ${{ env.FULL_SOLUTION_PATH }} --configuration Release
 
-      - name: Generate Results Report
-        run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --no-build --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results
+      - name: Generate Results and Coverage Reports
+        run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --no-build --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results --collect:"XPlat Code Coverage" --settings .runsettings
 
       - name: Uploaded Results Report
         uses: dorny/test-reporter@v1
@@ -72,13 +75,13 @@ jobs:
           fail-on-empty: true
           only-summary: false
 
-      - name: Generate Coverage Report
-        run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --no-build --verbosity normal --results-directory ./coverage --settings .runsettings
+      - name: Remove Runner Folder
+        run: find ./test-results -type d -name "*_*_*" -exec rm -rf {} +
 
       - name: Join Coverage Reports
         uses: danielpalme/ReportGenerator-GitHub-Action@5.3.9
         with:
-          reports: ${{ inputs.solution-path }}/coverage/**/coverage.cobertura.xml
+          reports: ${{ inputs.solution-path }}/test-results/**/coverage.cobertura.xml
           targetdir: coverage-report
           reporttypes: 'Html;Cobertura'
           verbosity: 'Verbose'
@@ -104,7 +107,7 @@ jobs:
           output: both
           thresholds: '85 90'
 
-      - name: Add Coverage PR Comment
+      - name: Add Coverage as PR Comment
         uses: marocchino/sticky-pull-request-comment@v2
         if: github.event_name == 'pull_request' && always()
         with:
