@@ -20,8 +20,7 @@ env:
   DOTNET_VERSION: '8.0.x' # The .NET SDK version to use
   FULL_SOLUTION_PATH: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
 
-permissions:
-  pull-requests: write
+permissions: write-all
 
 jobs:
   build:
