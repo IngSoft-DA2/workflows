@@ -36,14 +36,7 @@ jobs:
         run: |
           echo "buildLabelOff=${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Build Fix Required') }}" >> $GITHUB_ENV
           echo "testsLabelOff=${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Tests Fix Required') }}" >> $GITHUB_ENV
-   
-      - name: Exit if Labels Are Blocked
-        run: |
-          if [[ "${{ env.buildLabelOff }}" == "false" || "${{ env.testsLabelOff }}" == "false" ]]; then
-            echo "The PR is blocked due to labels. Exiting with status 1."
-            exit 1
-          fi
-          
+             
   build:
     name: Build
     needs: can_run
