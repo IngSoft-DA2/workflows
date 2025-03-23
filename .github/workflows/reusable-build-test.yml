@@ -32,12 +32,10 @@ jobs:
 
       - name: Check if can run
         run: |
-          for label in "${{ toJson(github.event.pull_request.labels) }}"; do
-            if [[ "$label" == *"Blocked: Build Fix Required"* ]]; then
-              echo "This PR has the 'Blocked: Build Fix Required' label, failing the action."
-              exit 1
-            fi
-          done
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'Blocked: Build Fix Required') }}" == "true" ]]; then
+            echo "This PR has the 'Blocked: Build Fix Required' label, failing the action."
+            exit 1
+          fi
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -54,10 +52,12 @@ jobs:
       - name: Block PR if Build Fail
         if: failure() && github.event_name == 'pull_request'
         run: |
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'Blocked: Build Fix Required') }}" == "true" ]]; then
-            echo "This PR has the 'Blocked: Build Fix Required' label, failing the action."
-            exit 1
-          fi
+          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/labels \
+            -d '{"labels":["Blocked: Build Fix Required"]}'
             
        # 📝 Comment on PR when blocked
       - name: Comment on PR if Build Fail
