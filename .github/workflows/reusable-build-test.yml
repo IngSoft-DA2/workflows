@@ -32,8 +32,10 @@ jobs:
 
       - name: Check if can run
         run: |
-          if contains(github.event.pull_request.labels.*.name, 'Blocked: Build Fix Required'); then
-            echo "fail=true" >> $GITHUB_ENV
+          if [[ "${{ github.event.pull_request.labels }}" == *"Blocked: Build Fix Required"* ]]; then
+            echo "This PR has the 'Blocked: Build Fix Required' label, failing the action."
+            exit 1
+          fi
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -78,8 +80,10 @@ jobs:
         
       - name: Check if can run
         run: |
-          if contains(github.event.pull_request.labels.*.name, 'Blocked: Tests Fix Required'); then
-            echo "fail=true" >> $GITHUB_ENV
+          if [[ "${{ github.event.pull_request.labels }}" == *"Blocked: Tests Fix Required"* ]]; then
+            echo "This PR has the 'Blocked: Tests Fix Required' label, failing the action."
+            exit 1
+          fi
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
