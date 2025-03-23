@@ -54,6 +54,12 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Check if Build was Skipped
+        if: ${{ needs.can_run.outputs.buildLabelOff == 'false' }}
+        run: |
+          echo "Build was skipped due to blocked label."
+          exit 1
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -94,6 +100,12 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        
+      - name: Check if Tests was Skipped
+        if: ${{ needs.can_run.outputs.testsLabelOff == 'false' }}
+        run: |
+          echo "Tests was skipped due to blocked label."
+          exit 1
         
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -166,7 +178,7 @@ jobs:
 
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Tests Fail
-        if: failure() && github.event_name == 'pull_request'  && ${{ needs.can_run.outputs.buildLabelOff }}
+        if: failure() && github.event_name == 'pull_request'  && ${{ needs.can_run.outputs.testsLabelOff }}
         run: |
           PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           curl -X POST \
@@ -178,7 +190,7 @@ jobs:
       # 📝 Comment on PR when blocked
       - name: Comment on PR if Tests Fail
         uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request' && failure()  && ${{ needs.can_run.outputs.buildLabelOff }}
+        if: github.event_name == 'pull_request' && failure()  && ${{ needs.can_run.outputs.testsLabelOff }}
         with:
           recreate: true
           message: |
