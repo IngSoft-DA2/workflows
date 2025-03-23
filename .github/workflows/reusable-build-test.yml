@@ -24,11 +24,30 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    if: "!contains(github.event.pull_request.labels.*.name, 'Blocked: Build Fix Required')"
     
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Get PR Labels
+        id: pr_labels
+        # run: |
+        #   PR_LABELS=$(curl -s \
+        #     -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+        #     https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels)
+          
+        #   echo "PR Labels: $PR_LABELS"
+          
+        #   if echo "$PR_LABELS" | grep -q '"name": "Blocked: Build Fix Required"'; then
+        #     echo "The PR is blocked by a Build Fix Required label."
+        #     echo "fail=true" >> $GITHUB_ENV
+        #   else
+        #     echo "The PR is not blocked. Proceeding with tests."
+        #     echo "fail=false" >> $GITHUB_ENV
+        #   fi
+        run: |
+          if contains(github.event.pull_request.labels.*.name, 'Blocked: Build Fix Required'); then
+            echo "fail=true" >> $GITHUB_ENV
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
