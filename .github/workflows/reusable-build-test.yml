@@ -40,6 +40,27 @@ jobs:
       - name: Run build
         run: dotnet build ${{ env.FULL_SOLUTION_PATH }} --configuration Release
 
+      # 🛑 Add "Blocked: Fix Required" label if tests fail
+      - name: Block PR if Build Fail
+        if: failure() && github.event_name == 'pull_request'
+        run: |
+          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/labels \
+            -d '{"labels":["Blocked: Build Fix Required"]}'
+            
+       # 📝 Comment on PR when blocked
+      - name: Comment on PR if Build Fail
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request' && failure()
+        with:
+          recreate: true
+          message: |
+            ❌ The build failed. The PR has been marked as **Blocked: Build Fix Required**. Please fix the issues before pushing again.
+       
+
   test:
     name: Test
     permissions: write-all
@@ -119,8 +140,6 @@ jobs:
       - name: Write to Job Summary
         if: always()
         run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
-          git tag --annotate "$BUMPED" --message "via GitHub Actions"
-          git push origin "$BUMPED"
 
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Tests Fail
@@ -140,7 +159,7 @@ jobs:
         with:
           recreate: true
           message: |
-            ❌ The tests failed. The PR has been marked as **Blocked: Fix Required**. Please fix the issues before pushing again.
+            ❌ The tests failed. The PR has been marked as **Blocked: Tests Fix Required**. Please fix the issues before pushing again.
             
       # - name: Comment on PR if Tests Fail
       #   if: failure() && github.event_name == 'pull_request'
