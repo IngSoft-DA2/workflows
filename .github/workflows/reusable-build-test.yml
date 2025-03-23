@@ -21,7 +21,7 @@ env:
   FULL_SOLUTION_PATH: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
 
 permissions:
-  pull-requests: write-all
+  pull-requests: write
 
 jobs:
   build:
