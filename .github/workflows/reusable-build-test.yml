@@ -21,21 +21,38 @@ env:
   FULL_SOLUTION_PATH: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
 
 jobs:
+  can_run:
+    name: Check Can Run
+    runs-on: ubuntu-latest
+    outputs:
+      buildLabelOff: ${{ env.buildLabelOff }}
+      testsLabelOff: ${{ env.testsLabelOff }}
+      
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Labels
+        run: |
+          echo "buildLabelOff=${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Build Fix Required') }}" >> $GITHUB_ENV
+          echo "testsLabelOff=${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Tests Fix Required') }}" >> $GITHUB_ENV
+   
+      - name: Exit if Labels Are Blocked
+        run: |
+          if [[ "${{ env.buildLabelOff }}" == "false" || "${{ env.testsLabelOff }}" == "false" ]]; then
+            echo "The PR is blocked due to labels. Exiting with status 1."
+            exit 1
+          fi
+          
   build:
     name: Build
+    needs: can_run
     permissions: write-all
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Check if can run
-        run: |
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'Blocked: Build Fix Required') }}" == "true" ]]; then
-            echo "This PR has the 'Blocked: Build Fix Required' label, failing the action."
-            exit 1
-          fi
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -50,7 +67,7 @@ jobs:
 
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Build Fail
-        if: failure() && github.event_name == 'pull_request'
+        if: failure() && github.event_name == 'pull_request' && ${{ needs.can_run.outputs.buildLabelOff }}
         run: |
           PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           curl -X POST \
@@ -62,7 +79,7 @@ jobs:
        # 📝 Comment on PR when blocked
       - name: Comment on PR if Build Fail
         uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request' && failure()
+        if: github.event_name == 'pull_request' && failure() && ${{ needs.can_run.outputs.buildLabelOff }}
         with:
           recreate: true
           message: |
@@ -78,13 +95,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         
-      - name: Check if can run
-        run: |
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'Blocked: Tests Fix Required') }}" == "true" ]]; then
-            echo "This PR has the 'Blocked: Tests Fix Required' label, failing the action."
-            exit 1
-          fi
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -156,7 +166,7 @@ jobs:
 
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Tests Fail
-        if: failure() && github.event_name == 'pull_request'
+        if: failure() && github.event_name == 'pull_request'  && ${{ needs.can_run.outputs.buildLabelOff }}
         run: |
           PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           curl -X POST \
@@ -168,7 +178,7 @@ jobs:
       # 📝 Comment on PR when blocked
       - name: Comment on PR if Tests Fail
         uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request' && failure()
+        if: github.event_name == 'pull_request' && failure()  && ${{ needs.can_run.outputs.buildLabelOff }}
         with:
           recreate: true
           message: |
