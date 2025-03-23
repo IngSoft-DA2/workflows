@@ -25,6 +25,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     if: "!contains(github.event.pull_request.labels.*.name, 'Blocked: Build Fix Required')"
+    
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -60,7 +61,6 @@ jobs:
           message: |
             ❌ The build failed. The PR has been marked as **Blocked: Build Fix Required**. Please fix the issues before pushing again.
        
-
   test:
     name: Test
     permissions: write-all
