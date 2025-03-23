@@ -66,7 +66,7 @@ jobs:
 
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Build Fail
-        if: failure() && github.event_name == 'pull_request' && ${{ needs.can_run.outputs.buildLabelOff }}
+        if: failure() && github.event_name == 'pull_request' && ${{ needs.can_run.outputs.buildLabelOff == 'true' }}
         run: |
           PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           curl -X POST \
@@ -78,7 +78,7 @@ jobs:
        # 📝 Comment on PR when blocked
       - name: Comment on PR if Build Fail
         uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request' && failure() && ${{ needs.can_run.outputs.buildLabelOff }}
+        if: github.event_name == 'pull_request' && failure() && ${{ needs.can_run.outputs.buildLabelOff  == 'true' }}
         with:
           recreate: true
           message: |
@@ -171,7 +171,7 @@ jobs:
 
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Tests Fail
-        if: failure() && github.event_name == 'pull_request'  && ${{ needs.can_run.outputs.testsLabelOff }}
+        if: failure() && github.event_name == 'pull_request'  && ${{ needs.can_run.outputs.testsLabelOff  == 'true' }}
         run: |
           PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           curl -X POST \
@@ -183,7 +183,7 @@ jobs:
       # 📝 Comment on PR when blocked
       - name: Comment on PR if Tests Fail
         uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request' && failure()  && ${{ needs.can_run.outputs.testsLabelOff }}
+        if: github.event_name == 'pull_request' && failure()  && ${{ needs.can_run.outputs.testsLabelOff  == 'true' }}
         with:
           recreate: true
           message: |
