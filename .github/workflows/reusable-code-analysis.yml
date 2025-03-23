@@ -19,6 +19,7 @@ jobs:
   analysis:
     name: Analysis
     runs-on: ubuntu-latest
+    if: "!contains(github.event.pull_request.labels.*.name, 'Blocked: Analysis Fix Required')"
 
     steps:
       - name: Checkout Repository
@@ -39,3 +40,23 @@ jobs:
           name: Code Analysis Report
           path: ${{ inputs.solution-path }}/analysis/format-report.json
           retention-days: 1
+          
+      # 🛑 Add "Blocked: Fix Required" label if tests fail
+      - name: Block PR if Analysis Fail
+        if: failure() && github.event_name == 'pull_request'
+        run: |
+          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/labels \
+            -d '{"labels":["Blocked: Analysis Fix Required"]}'
+            
+       # 📝 Comment on PR when blocked
+      - name: Comment on PR if Analysis Fail
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: github.event_name == 'pull_request' && failure()
+        with:
+          recreate: true
+          message: |
+            ❌ The analysis failed. The PR has been marked as **Blocked: Analysis Fix Required**. Please fix the issues before pushing again.
