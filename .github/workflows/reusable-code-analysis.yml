@@ -19,11 +19,17 @@ jobs:
   analysis:
     name: Analysis
     runs-on: ubuntu-latest
-    if: "!contains(github.event.pull_request.labels.*.name, 'Blocked: Analysis Fix Required')"
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Check if can run
+        run: |
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'Blocked: Analysis Fix Required') }}" == "true" ]]; then
+            echo "This PR has the 'Blocked: Analysis Fix Required' label, failing the action."
+            exit 1
+          fi
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
