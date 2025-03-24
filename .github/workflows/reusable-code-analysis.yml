@@ -41,7 +41,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Check if Build was Skipped
+      - name: Check if Analysis was Skipped
         if: ${{ needs.can_run.outputs.analysisLabelOff == 'false' }}
         run: |
           echo "Analysis was skipped due to blocked label."
