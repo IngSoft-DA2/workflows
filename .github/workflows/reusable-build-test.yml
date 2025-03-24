@@ -55,7 +55,8 @@ jobs:
 
           if ${{ needs.can_run.outputs.buildLabelOff == false }}; then
             echo "Build was skipped due to blocked label."
-          exit 1
+            exit 1
+          fi
           
           echo "buildLabelOff=${{ needs.can_run.outputs.buildLabelOff }}"
           echo "testsLabelOff=${{ needs.can_run.outputs.testsLabelOff }}"
