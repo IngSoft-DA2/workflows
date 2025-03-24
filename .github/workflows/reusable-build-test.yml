@@ -74,12 +74,8 @@ jobs:
 
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Build Fail
-        if: failure() && github.event_name == 'pull_request'
+        if: ${{ failure() && github.event_name == 'pull_request' && needs.can_run.outputs.buildLabelOff == true }}
         run: |
-          if ${{ needs.can_run.outputs.buildLabelOff == false }}; then
-            echo "Build was skipped due to blocked label."
-          exit 1
-          
           PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           curl -X POST \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
@@ -89,8 +85,8 @@ jobs:
             
        # 📝 Comment on PR when blocked
       - name: Comment on PR if Build Fail
+        if: ${{ failure() && github.event_name == 'pull_request' && needs.can_run.outputs.buildLabelOff == true }}
         uses: marocchino/sticky-pull-request-comment@v2
-        if: failure() && github.event_name == 'pull_request' && ${{ needs.can_run.outputs.buildLabelOff == false }}
         with:
           recreate: true
           message: |
