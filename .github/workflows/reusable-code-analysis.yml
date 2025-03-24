@@ -87,7 +87,7 @@ jobs:
           
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Analysis Fail
-        if: ${{ failure() && github.event_name == 'pull_request' && needs.can_run.outputs.buildLabelOff == 'true' && needs.can_run.outputs.testsLabelOff == 'true' && needs.can_run.outputs.analysisLabelOff == 'true'' }}
+        if: ${{ failure() && github.event_name == 'pull_request' && needs.can_run.outputs.buildLabelOff == 'true' && needs.can_run.outputs.testsLabelOff == 'true' && needs.can_run.outputs.analysisLabelOff == 'true' }}
         run: |
           PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           curl -X POST \
