@@ -93,7 +93,7 @@ jobs:
   test:
     name: Test
     permissions: write-all
-    needs: build
+    needs: [build, can_run]
     runs-on: ubuntu-latest
     
     steps:
