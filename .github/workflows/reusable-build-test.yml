@@ -24,6 +24,9 @@ jobs:
   can_run:
     name: Check Can Run
     runs-on: ubuntu-latest
+    outputs:
+      buildLabelOff: ${{ steps.set_labels.outputs.buildLabelOff }}
+      testsLabelOff: ${{ steps.set_labels.outputs.testsLabelOff }}
       
     steps:
       - name: Checkout Repository
@@ -34,8 +37,11 @@ jobs:
           buildLabelOff=${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Build Fix Required') }}
           testsLabelOff=${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Tests Fix Required') }}
           
-          echo "buildLabelOff=$buildLabelOff" >> $GITHUB_ENV
-          echo "testsLabelOff=$testsLabelOff" >> $GITHUB_ENV
+          echo "buildLabelOff=${buildLabelOff}" >> $GITHUB_ENV
+          echo "testsLabelOff=${testsLabelOff}" >> $GITHUB_ENV
+          
+          echo "::set-output name=buildLabelOff::$buildLabelOff"
+          echo "::set-output name=testsLabelOff::$testsLabelOff"
              
   build:
     name: Build
@@ -48,7 +54,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check if Build was Skipped
-        if: ${{ env.buildLabelOff == false }}
+        if: ${{ needs.can_run.outputs.buildLabelOff == 'false' }}
         run: |
           echo "buildLabelOff=${{ env.buildLabelOff }}"
           echo "testsLabelOff=${{ env.testsLabelOff }}"
@@ -68,7 +74,7 @@ jobs:
 
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Build Fail
-        if: failure() && github.event_name == 'pull_request' && ${{ env.buildLabelOff == true }}
+        if: failure() && github.event_name == 'pull_request' && ${{ needs.can_run.outputs.buildLabelOff == 'true' }}
         run: |
           PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           curl -X POST \
@@ -80,7 +86,7 @@ jobs:
        # 📝 Comment on PR when blocked
       - name: Comment on PR if Build Fail
         uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request' && failure() && ${{ env.buildLabelOff == true }}
+        if: github.event_name == 'pull_request' && failure() && ${{ needs.can_run.outputs.buildLabelOff == 'true' }}
         with:
           recreate: true
           message: |
@@ -97,7 +103,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Check if Tests was Skipped
-        if: ${{ env.testsLabelOff == false }}
+        if: ${{ needs.can_run.outputs.testsLabelOff == 'false' }}
         run: |
           echo "Tests was skipped due to blocked label."
           exit 1
@@ -173,7 +179,7 @@ jobs:
 
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Tests Fail
-        if: failure() && github.event_name == 'pull_request'  && ${{ env.testsLabelOff == true }}
+        if: failure() && github.event_name == 'pull_request'  && ${{ needs.can_run.outputs.testsLabelOff == 'true' }}
         run: |
           PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           curl -X POST \
@@ -185,7 +191,7 @@ jobs:
       # 📝 Comment on PR when blocked
       - name: Comment on PR if Tests Fail
         uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request' && failure()  && ${{ env.testsLabelOff == true }}
+        if: github.event_name == 'pull_request' && failure()  && ${{ needs.can_run.outputs.testsLabelOff == 'true' }}
         with:
           recreate: true
           message: |
