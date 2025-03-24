@@ -58,7 +58,7 @@ jobs:
         run: dotnet format ${{ ENV.FULL_SOLUTION_PATH }} --verify-no-changes --verbosity diagnostic --report ./analysis
 
       - name: Upload code analysis report
-        if: always()
+        if: ${{ always() && needs.can_run.outputs.analysisLabelOff == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: Code Analysis Report
