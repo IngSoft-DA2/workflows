@@ -50,6 +50,8 @@ jobs:
       - name: Check if Build was Skipped
         if: ${{ env.buildLabelOff == false }}
         run: |
+          echo "buildLabelOff=${{ env.buildLabelOff }}"
+          echo "testsLabelOff=${{ env.testsLabelOff }}"
           echo "Build was skipped due to blocked label."
           exit 1
 
