@@ -119,7 +119,7 @@ jobs:
 
       - name: Uploaded Results Report
         uses: dorny/test-reporter@v1
-        if: always()
+        if: ${{ always() && needs.can_run.outputs.testsLabelOff == 'true' }}
         with:
           name: Uploaded Results Report
           path: ${{ inputs.solution-path }}/test-results/test-results*
@@ -166,18 +166,18 @@ jobs:
 
       - name: Add Coverage as PR Comment
         uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request' && always()
+        if: ${{ always() && github.event_name == 'pull_request' && needs.can_run.outputs.testsLabelOff == 'true' }}
         with:
           recreate: true
           path: code-coverage-results.md
 
       - name: Write to Job Summary
-        if: always()
+        if: ${{ always() && needs.can_run.outputs.testsLabelOff == 'true' }}
         run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
 
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Tests Fail
-        if: ${{ failure() && github.event_name == 'pull_request'  && needs.can_run.outputs.testsLabelOff == 'true' }}
+        if: ${{ failure() && github.event_name == 'pull_request' && needs.can_run.outputs.testsLabelOff == 'true' }}
         run: |
           PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           curl -X POST \
@@ -189,7 +189,7 @@ jobs:
       # 📝 Comment on PR when blocked
       - name: Comment on PR if Tests Fail
         uses: marocchino/sticky-pull-request-comment@v2
-        if: ${{ github.event_name == 'pull_request' && failure()  && needs.can_run.outputs.testsLabelOff == 'true' }}
+        if: ${{ failure() && github.event_name == 'pull_request' && needs.can_run.outputs.testsLabelOff == 'true' }}
         with:
           recreate: true
           message: |
