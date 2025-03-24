@@ -16,14 +16,58 @@ env:
   FULL_SOLUTION_PATH: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
 
 jobs:
+  can_run:
+    name: Check Can Run
+    runs-on: ubuntu-latest
+    outputs:
+      buildLabelOff: ${{ env.buildLabelOff }}
+      testsLabelOff: ${{ env.testsLabelOff }}
+      analysisLabelOff: ${{ env.analysisLabelOff }}
+      
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Labels
+        run: |
+          buildLabelOff=${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Build Fix Required') }}
+          testsLabelOff=${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Tests Fix Required') }}
+          analysisLabelOff=${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Analysis Fix Required') }}
+          
+          echo "buildLabelOff=${buildLabelOff}" >> $GITHUB_ENV
+          echo "testsLabelOff=${testsLabelOff}" >> $GITHUB_ENV
+          echo "analysisLabelOff=${analysisLabelOff}" >> $GITHUB_ENV
+          
   analysis:
     name: Analysis
+    needs: can_run
     runs-on: ubuntu-latest
-    if: "!contains(github.event.pull_request.labels.*.name, 'Blocked: Analysis Fix Required')"
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Check If Blocked Label Exists
+        if: ${{ needs.can_run.outputs.buildLabelOff == 'false' || needs.can_run.outputs.testsLabelOff == 'false' || needs.can_run.outputs.analysisLabelOff == 'false' }}
+        run: |
+
+          if [[ "${{ needs.can_run.outputs.buildLabelOff }}" == "false" ]]; then
+            echo "Build blocked label exists."
+          fi
+
+          if [[ "${{ needs.can_run.outputs.testsLabelOff }}" == "false" ]]; then
+            echo "Tests blocked label exists."
+          fi
+
+          if [[ "${{ needs.can_run.outputs.analysisLabelOff }}" == "false" ]]; then
+            echo "Analysis blocked label exists."
+          fi
+          
+          exit 1
+          
+          echo "buildLabelOff=${{ needs.can_run.outputs.buildLabelOff }}"
+          echo "testsLabelOff=${{ needs.can_run.outputs.testsLabelOff }}"
+          echo "analysisLabelOff=${{ needs.can_run.outputs.analysisLabelOff }}"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -34,7 +78,7 @@ jobs:
         run: dotnet format ${{ ENV.FULL_SOLUTION_PATH }} --verify-no-changes --verbosity diagnostic --report ./analysis
 
       - name: Upload code analysis report
-        if: always()
+        if: ${{ always() && needs.can_run.outputs.buildLabelOff == 'true' && needs.can_run.outputs.testsLabelOff == 'true' && needs.can_run.outputs.analysisLabelOff == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: Code Analysis Report
@@ -43,7 +87,7 @@ jobs:
           
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Analysis Fail
-        if: failure() && github.event_name == 'pull_request'
+        if: ${{ failure() && github.event_name == 'pull_request' && needs.can_run.outputs.buildLabelOff == 'true' && needs.can_run.outputs.testsLabelOff == 'true' && needs.can_run.outputs.analysisLabelOff == 'true' }}
         run: |
           PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           curl -X POST \
@@ -54,8 +98,8 @@ jobs:
             
        # 📝 Comment on PR when blocked
       - name: Comment on PR if Analysis Fail
+        if: ${{ failure() && github.event_name == 'pull_request' && needs.can_run.outputs.buildLabelOff == 'true' && needs.can_run.outputs.testsLabelOff == 'true' && needs.can_run.outputs.analysisLabelOff == 'true' }}
         uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request' && failure()
         with:
           recreate: true
           message: |
