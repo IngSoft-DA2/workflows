@@ -53,7 +53,7 @@ jobs:
       - name: Check if Build was Skipped
         run: |
 
-          if [[ "${{ needs.can_run.outputs.buildLabelOff" == "false" }} ]]; then
+          if [[ "${{ needs.can_run.outputs.buildLabelOff }}" == "false" ]]; then
             echo "Build was skipped due to blocked label."
             exit 1
           fi
