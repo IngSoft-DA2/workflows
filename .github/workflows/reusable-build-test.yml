@@ -51,17 +51,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check if Build was Skipped
-        if: ${{ needs.can_run.outputs.buildLabelOff == false }}
         run: |
-          echo "buildLabelOff=${{ env.buildLabelOff }}"
-          echo "testsLabelOff=${{ env.testsLabelOff }}"
-          
-          echo "buildLabelOff=${{ needs.can_run.outputs.buildLabelOff == false }}"
-          echo "buildLabelOff=${{ needs.can_run.outputs.buildLabelOff }} == false"
-          echo "testsLabelOff=${{ needs.can_run.outputs.testsLabelOff }}"
 
-          echo "Build was skipped due to blocked label."
+          if ${{ needs.can_run.outputs.buildLabelOff == false }}; then
+            echo "Build was skipped due to blocked label."
           exit 1
+          
+          echo "buildLabelOff=${{ needs.can_run.outputs.buildLabelOff }}"
+          echo "testsLabelOff=${{ needs.can_run.outputs.testsLabelOff }}"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -76,8 +73,12 @@ jobs:
 
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Build Fail
-        if: failure() && github.event_name == 'pull_request' && ${{ needs.can_run.outputs.buildLabelOff == true }}
+        if: failure() && github.event_name == 'pull_request'
         run: |
+          if ${{ needs.can_run.outputs.buildLabelOff == false }}; then
+            echo "Build was skipped due to blocked label."
+          exit 1
+          
           PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           curl -X POST \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
@@ -88,7 +89,7 @@ jobs:
        # 📝 Comment on PR when blocked
       - name: Comment on PR if Build Fail
         uses: marocchino/sticky-pull-request-comment@v2
-        if: github.event_name == 'pull_request' && failure() && ${{ needs.can_run.outputs.buildLabelOff == true }}
+        if: failure() && github.event_name == 'pull_request' && ${{ needs.can_run.outputs.buildLabelOff == false }}
         with:
           recreate: true
           message: |
