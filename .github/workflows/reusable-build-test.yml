@@ -59,7 +59,7 @@ jobs:
           fi
 
           if [[ "${{ needs.can_run.outputs.testsLabelOff }}" == "false" ]]; then
-            echo "Build was skipped due to blocked label."
+            echo "Tests was skipped due to blocked label."
           fi
           exit 1
           
