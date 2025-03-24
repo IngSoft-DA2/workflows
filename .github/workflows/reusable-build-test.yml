@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check if Build was Skipped
-        if: ${{ needs.can_run.outputs.buildLabelOff == true }}
+        if: ${{ needs.can_run.outputs.buildLabelOff }}
         run: |
           echo "Build was skipped due to blocked label."
           exit 1
