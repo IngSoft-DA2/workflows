@@ -34,8 +34,11 @@ jobs:
 
       - name: Set Labels
         run: |
-          echo "buildLabelOff=${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Build Fix Required') }}" >> $GITHUB_ENV
-          echo "testsLabelOff=${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Tests Fix Required') }}" >> $GITHUB_ENV
+          buildLabelOff="${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Build Fix Required') }}"
+          testsLabelOff="${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Tests Fix Required') }}"
+          
+          echo "::set-output name=buildLabelOff::$buildLabelOff"
+          echo "::set-output name=testsLabelOff::$testsLabelOff"
              
   build:
     name: Build
