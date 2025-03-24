@@ -24,9 +24,6 @@ jobs:
   can_run:
     name: Check Can Run
     runs-on: ubuntu-latest
-    outputs:
-      buildLabelOff: ${{ env.buildLabelOff }}
-      testsLabelOff: ${{ env.testsLabelOff }}
       
     steps:
       - name: Checkout Repository
@@ -37,8 +34,8 @@ jobs:
           buildLabelOff=${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Build Fix Required') }}
           testsLabelOff=${{ !contains(github.event.pull_request.labels.*.name, 'Blocked: Tests Fix Required') }}
           
-          echo $buildLabelOff >> $GITHUB_ENV
-          echo $testsLabelOff >> $GITHUB_ENV
+          echo "buildLabelOff=$buildLabelOff" >> $GITHUB_ENV
+          echo "testsLabelOff=$testsLabelOff" >> $GITHUB_ENV
              
   build:
     name: Build
