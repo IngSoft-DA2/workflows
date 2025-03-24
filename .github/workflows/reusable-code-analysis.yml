@@ -47,7 +47,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Check if Build was Skipped
+      - name: Check If Blocked Label Exists
         if: ${{ needs.can_run.outputs.buildLabelOff == 'false' || needs.can_run.outputs.testsLabelOff == 'false' || needs.can_run.outputs.analysisLabelOff == 'false' }}
         run: |
 
