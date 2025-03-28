@@ -120,12 +120,9 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      
-      - name: Build in Release
-        run: dotnet build ${{ env.FULL_SOLUTION_PATH }} --configuration Release
 
       - name: Generate Results and Coverage Reports
-        run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --no-build --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results --collect:"XPlat Code Coverage" --settings .runsettings
+        run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results --collect:"XPlat Code Coverage" --settings .runsettings
 
       - name: Uploaded Results Report
         uses: dorny/test-reporter@v1
