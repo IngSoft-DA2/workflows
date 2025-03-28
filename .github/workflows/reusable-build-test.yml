@@ -120,16 +120,23 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      
-      - name: Build in Release
-        run: dotnet build ${{ env.FULL_SOLUTION_PATH }} --configuration Release
+
+      - name: Exist Tests
+        id: check_tests
+        run: |
+          if ls **/Test.cs **/*Tests.cs 1> /dev/null 2>&1; then
+            echo "HAS_TESTS=true" >> $GITHUB_ENV
+          else
+            echo "HAS_TESTS=false" >> $GITHUB_ENV
+          fi
 
       - name: Generate Results and Coverage Reports
-        run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --no-build --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results --collect:"XPlat Code Coverage" --settings .runsettings
+        if: env.HAS_TESTS == 'true'
+        run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results --collect:"XPlat Code Coverage" --settings .runsettings
 
       - name: Uploaded Results Report
         uses: dorny/test-reporter@v1
-        if: ${{ always() }}
+        if: ${{ always() && env.HAS_TESTS == 'true' }}
         with:
           name: Uploaded Results Report
           path: ${{ inputs.solution-path }}/test-results/test-results*
@@ -143,9 +150,11 @@ jobs:
           only-summary: false
 
       - name: Remove Runner Folder
+        if: ${{ env.HAS_TESTS == 'true' }}
         run: find ./test-results -type d -name "*_*_*" -exec rm -rf {} +
 
       - name: Join Coverage Reports
+        if: ${{ env.HAS_TESTS == 'true' }}
         uses: danielpalme/ReportGenerator-GitHub-Action@5.3.9
         with:
           reports: ${{ inputs.solution-path }}/test-results/**/coverage.cobertura.xml
@@ -156,12 +165,14 @@ jobs:
           title: '${{ inputs.report-coverage-title }}'
 
       - name: Upload Coverage Report
+        if: ${{ env.HAS_TESTS == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: Coverage Report       
           path: coverage-report
 
       - name: Check Coverage
+        if: ${{ env.HAS_TESTS == 'true' }}
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
           filename: coverage-report/Cobertura.xml
@@ -176,18 +187,18 @@ jobs:
 
       - name: Add Coverage as PR Comment
         uses: marocchino/sticky-pull-request-comment@v2
-        if: ${{ always() && github.event_name == 'pull_request' }}
+        if: ${{ always() && github.event_name == 'pull_request' && env.HAS_TESTS == 'true' }}
         with:
           recreate: true
           path: code-coverage-results.md
 
       - name: Write to Job Summary
-        if: ${{ always() }}
+        if: ${{ always() && env.HAS_TESTS == 'true' }}
         run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
 
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Tests Fail
-        if: ${{ failure() && github.event_name == 'pull_request' }}
+        if: ${{ failure() && github.event_name == 'pull_request' && env.HAS_TESTS == 'true' }}
         run: |
           PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
           curl -X POST \
@@ -199,7 +210,7 @@ jobs:
       # 📝 Comment on PR when blocked
       - name: Comment on PR if Tests Fail
         uses: marocchino/sticky-pull-request-comment@v2
-        if: ${{ failure() && github.event_name == 'pull_request' }}
+        if: ${{ failure() && github.event_name == 'pull_request' && env.HAS_TESTS == 'true' }}
         with:
           recreate: true
           message: |
