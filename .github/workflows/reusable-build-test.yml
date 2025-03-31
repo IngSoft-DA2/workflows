@@ -24,6 +24,7 @@ jobs:
   can_run:
     name: Check Can Run
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     outputs:
       buildLabelOff: ${{ env.buildLabelOff }}
       testsLabelOff: ${{ env.testsLabelOff }}
@@ -48,6 +49,7 @@ jobs:
     needs: can_run
     permissions: write-all
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     
     steps:
       - name: Checkout Repository
@@ -111,7 +113,8 @@ jobs:
     permissions: write-all
     needs: [build, can_run]
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 5
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
