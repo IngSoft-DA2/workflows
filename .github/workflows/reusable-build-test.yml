@@ -135,6 +135,7 @@ jobs:
           else
             echo "✅ No significant source code found, tests are not required."
             echo "required_tests=false" >> $GITHUB_ENV
+          fi
 
       - name: Generate Results and Coverage Reports
         if: ${{ env.required_tests == 'true' }}
