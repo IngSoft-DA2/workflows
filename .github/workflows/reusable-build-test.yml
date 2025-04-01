@@ -58,7 +58,6 @@ jobs:
       - name: Check If Blocked Label Exists
         if: ${{ needs.can_run.outputs.buildLabelOff == 'false' || needs.can_run.outputs.testsLabelOff == 'false' || needs.can_run.outputs.analysisLabelOff == 'false' }}
         run: |
-
           if [[ "${{ needs.can_run.outputs.buildLabelOff }}" == "false" ]]; then
             echo "Build blocked label exists."
           fi
@@ -128,7 +127,7 @@ jobs:
         run: |
           # Find source code files excluding Program.cs
           SOURCE_FILES=$(find ${{ inputs.solution-path }} -type f -name "*.cs" ! -name "Program.cs")
-      
+          
           if [[ -n "$SOURCE_FILES" ]]; then
             echo "🔍 Source code files found, tests will be required."
             echo "required_tests=true" >> $GITHUB_ENV
@@ -158,8 +157,7 @@ jobs:
 
       - name: Remove Runner Folder
         if: ${{ env.required_tests == 'true' }}
-        run: |
-            find ./test-results -type d -name "*_*_*" -exec rm -rf {} +
+        run: find ./test-results -type d -name "*_*_*" -exec rm -rf {} +
 
       - name: Join Coverage Reports
         uses: danielpalme/ReportGenerator-GitHub-Action@5.3.9
@@ -201,8 +199,7 @@ jobs:
 
       - name: Write to Job Summary
         if: ${{ always() && env.required_tests == 'true' }}
-        run: |
-            cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
+        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
 
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Tests Fail
