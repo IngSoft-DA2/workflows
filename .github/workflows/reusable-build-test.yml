@@ -124,12 +124,25 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Check for Source Code Files
+        run: |
+          # Find source code files excluding Program.cs
+          SOURCE_FILES=$(find ${{ inputs.solution-path }} -type f -name "*.cs" ! -name "Program.cs")
+      
+          if [[ -n "$SOURCE_FILES" ]]; then
+            echo "🔍 Source code files found, tests will be required."
+            echo "required_tests=true" >> $GITHUB_ENV
+          else
+            echo "✅ No significant source code found, tests are not required."
+            echo "required_tests=false" >> $GITHUB_ENV
+
       - name: Generate Results and Coverage Reports
+        if: ${{ env.required_tests == 'true' }}
         run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results --collect:"XPlat Code Coverage" --settings .runsettings
 
       - name: Uploaded Results Report
         uses: dorny/test-reporter@v1
-        if: ${{ always() && hashFiles(format('{0}/test-results/test-results*', inputs.solution-path)) != '' }}
+        if: ${{ always() && env.required_tests == 'true' }}
         with:
           name: Uploaded Results Report
           path: ${{ inputs.solution-path }}/test-results/test-results*
@@ -143,16 +156,13 @@ jobs:
           only-summary: false
 
       - name: Remove Runner Folder
+        if: ${{ env.required_tests == 'true' }}
         run: |
-          if [ -d "./test-results" ]; then
             find ./test-results -type d -name "*_*_*" -exec rm -rf {} +
-          else
-            echo "No test-results directory found. Skipping cleanup."
-          fi
 
       - name: Join Coverage Reports
         uses: danielpalme/ReportGenerator-GitHub-Action@5.3.9
-        if: ${{ hashFiles(format('{0}/test-results/test-results*', inputs.solution-path)) != '' }}
+        if: ${{ env.required_tests == 'true' }}
         with:
           reports: ${{ inputs.solution-path }}/test-results/**/coverage.cobertura.xml
           targetdir: coverage-report
@@ -169,7 +179,7 @@ jobs:
 
       - name: Check Coverage
         uses: irongut/CodeCoverageSummary@v1.3.0
-        if: ${{ hashFiles(format('{0}/test-results/test-results*', inputs.solution-path)) != '' }}
+        if: ${{ env.required_tests == 'true' }}
         with:
           filename: coverage-report/Cobertura.xml
           badge: true
@@ -183,13 +193,13 @@ jobs:
 
       - name: Add Coverage as PR Comment
         uses: marocchino/sticky-pull-request-comment@v2
-        if: ${{ always() && github.event_name == 'pull_request' && hashFiles('code-coverage-results.md') != '' }}
+        if: ${{ always() && github.event_name == 'pull_request' && env.required_tests == 'true' }}
         with:
           recreate: true
           path: code-coverage-results.md
 
       - name: Write to Job Summary
-        if: ${{ always() && hashFiles(format('{0}/test-results/test-results*', inputs.solution-path)) != '' }}
+        if: ${{ always() && env.required_tests == 'true' }}
         run: |
           if [ -f "code-coverage-results.md" ]; then
             cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
