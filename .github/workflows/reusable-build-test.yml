@@ -152,6 +152,7 @@ jobs:
 
       - name: Join Coverage Reports
         uses: danielpalme/ReportGenerator-GitHub-Action@5.3.9
+        if: ${{ hashFiles(format('{0}/test-results/test-results*', inputs.solution-path)) != '' }}
         with:
           reports: ${{ inputs.solution-path }}/test-results/**/coverage.cobertura.xml
           targetdir: coverage-report
