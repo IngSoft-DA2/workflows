@@ -143,7 +143,12 @@ jobs:
           only-summary: false
 
       - name: Remove Runner Folder
-        run: find ./test-results -type d -name "*_*_*" -exec rm -rf {} +
+        run: |
+          if [ -d "./test-results" ]; then
+            find ./test-results -type d -name "*_*_*" -exec rm -rf {} +
+          else
+            echo "No test-results directory found. Skipping cleanup."
+          fi
 
       - name: Join Coverage Reports
         uses: danielpalme/ReportGenerator-GitHub-Action@5.3.9
@@ -176,14 +181,19 @@ jobs:
 
       - name: Add Coverage as PR Comment
         uses: marocchino/sticky-pull-request-comment@v2
-        if: ${{ always() && github.event_name == 'pull_request' }}
+        if: ${{ always() && github.event_name == 'pull_request' && hashFiles('code-coverage-results.md') != '' }}
         with:
           recreate: true
           path: code-coverage-results.md
 
       - name: Write to Job Summary
         if: ${{ always() }}
-        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
+        run: |
+          if [ -f "code-coverage-results.md" ]; then
+            cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No coverage report available." >> $GITHUB_STEP_SUMMARY
+          fi
 
       # 🛑 Add "Blocked: Fix Required" label if tests fail
       - name: Block PR if Tests Fail
