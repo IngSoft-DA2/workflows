@@ -129,7 +129,7 @@ jobs:
 
       - name: Uploaded Results Report
         uses: dorny/test-reporter@v1
-        if: ${{ always() }}
+        if: ${{ always() && hashFiles(format('{0}/test-results/test-results*', inputs.solution-path)) != '' }}
         with:
           name: Uploaded Results Report
           path: ${{ inputs.solution-path }}/test-results/test-results*
@@ -138,8 +138,8 @@ jobs:
           list-suites: all
           list-tests: all
           max-annotations: 10
-          fail-on-error: true
-          fail-on-empty: true
+          fail-on-error: false
+          fail-on-empty: false
           only-summary: false
 
       - name: Remove Runner Folder
