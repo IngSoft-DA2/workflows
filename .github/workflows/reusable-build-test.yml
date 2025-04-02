@@ -203,6 +203,7 @@ jobs:
           recreate: true
           path: code-coverage-results.md
           header: "### Code Coverage Report"  # 👈 Unique header to avoid overwriting
+          delete: true
 
       - name: Write to Job Summary
         if: ${{ always() && env.required_tests == 'true'}}
@@ -228,3 +229,4 @@ jobs:
           message: |
             ❌ The tests failed. The PR has been marked as **Blocked: Tests Fix Required**. Please fix the issues before pushing again.
           header: "### PR Blocked: Fix Required"  # 👈 Unique header to prevent overwriting coverage report
+          delete: true
