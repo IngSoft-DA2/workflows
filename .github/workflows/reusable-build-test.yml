@@ -202,8 +202,6 @@ jobs:
         with:
           recreate: true
           path: code-coverage-results.md
-          header: "### Code Coverage Report"  # 👈 Unique header to avoid overwriting
-          delete: true
 
       - name: Write to Job Summary
         if: ${{ always() && env.required_tests == 'true'}}
@@ -225,8 +223,6 @@ jobs:
         if: ${{ failure() && github.event_name == 'pull_request' && env.required_tests == 'true' }}
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          recreate: true
+          append: true
           message: |
             ❌ The tests failed. The PR has been marked as **Blocked: Tests Fix Required**. Please fix the issues before pushing again.
-          header: "### PR Blocked: Fix Required"  # 👈 Unique header to prevent overwriting coverage report
-          delete: true
