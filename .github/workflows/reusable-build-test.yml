@@ -200,8 +200,11 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         if: ${{ always() && github.event_name == 'pull_request' && env.required_tests == 'true' }}
         with:
+          header: build-test
           recreate: true
-          path: code-coverage-results.md
+          message: |
+            ${{ hashFiles('code-coverage-results.md') != '' && '### Code Coverage Report\n\n' || '⚠️ Code coverage report not found. Tests required.' }}
+          path: ${{ hashFiles('code-coverage-results.md') != '' && 'code-coverage-results.md' || '' }}
 
       - name: Write to Job Summary
         if: ${{ always() && env.required_tests == 'true'}}
@@ -223,6 +226,7 @@ jobs:
         if: ${{ failure() && github.event_name == 'pull_request' && env.required_tests == 'true' }}
         uses: marocchino/sticky-pull-request-comment@v2
         with:
+          header: build-test
           append: true
           message: |
             ❌ The tests failed. The PR has been marked as **Blocked: Tests Fix Required**. Please fix the issues before pushing again.
