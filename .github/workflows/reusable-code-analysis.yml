@@ -104,6 +104,7 @@ jobs:
         if: ${{ failure() && github.event_name == 'pull_request' && needs.can_run.outputs.buildLabelOff == 'true' && needs.can_run.outputs.testsLabelOff == 'true' && needs.can_run.outputs.analysisLabelOff == 'true' }}
         uses: marocchino/sticky-pull-request-comment@v2
         with:
+          header: analysis
           recreate: true
           message: |
             ❌ The analysis failed. The PR has been marked as **Blocked: Analysis Fix Required**. Please fix the issues before pushing again.
