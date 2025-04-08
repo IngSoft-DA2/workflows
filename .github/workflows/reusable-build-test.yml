@@ -150,7 +150,7 @@ jobs:
         uses: dorny/test-reporter@v1
         with:
           name: Uploaded Results Report
-          path: ${{ inputs.solution-path }}/test-results/test-results*
+          path: ${{ inputs.solution-path }}/test-results/test-results*.trx
           reporter: dotnet-trx
           path-replace-backslashes: false
           list-suites: all
@@ -160,9 +160,9 @@ jobs:
           fail-on-empty: true
           only-summary: false
 
-      - name: Remove Runner Folder
-        if: ${{ env.required_tests == 'true' }}
-        run: find ./test-results -type d -name "*_*_*" -exec rm -rf {} +
+      # - name: Remove Runner Folder
+      #   if: ${{ env.required_tests == 'true' }}
+      #   run: find ./test-results -type d -name "*_*_*" -exec rm -rf {} +
 
       - name: Join Coverage Reports
         if: ${{ env.required_tests == 'true' }}
