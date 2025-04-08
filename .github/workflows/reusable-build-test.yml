@@ -131,8 +131,7 @@ jobs:
             ! -name "Program.cs" \
             ! -name "*DbContext.cs" \
             ! -name "*Context.cs" \
-            ! -path "**/Migrations/*" \
-            ! -path "*Test*.cs")
+            ! -path "*/Migrations/*")
           
           if [[ -n "$SOURCE_FILES" ]]; then
             echo "🔍 Source code files found, tests will be required."
