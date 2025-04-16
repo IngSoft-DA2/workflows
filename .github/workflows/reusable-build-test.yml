@@ -157,7 +157,7 @@ jobs:
       - name: Generate Coverage Report
         run: |
           reportgenerator \
-            -reports:coverage/*/coverage.cobertura.xml \
+            -reports:coverage-report/Cobertura.xml \
             -targetdir:report \
             -reporttypes:MarkdownSummaryGithub
       
