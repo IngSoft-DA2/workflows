@@ -64,7 +64,9 @@ jobs:
     needs: [build]
     runs-on: ${{ fromJson(inputs.self-hosted-labels) }}
     timeout-minutes: 5
-
+    env:
+        DOTNET_INSTALL_DIR: "/home/runner/.dotnet"
+        
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
