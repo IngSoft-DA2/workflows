@@ -136,7 +136,7 @@ jobs:
 
       - name: Check Coverage
         if: ${{ env.required_tests == 'true' }}
-        uses: irongut/CodeCoverageSummary@v1.3.0
+        uses: irongut/CodeCoverageSummary@v1.3.1-node
         with:
           filename: coverage-report/Cobertura.xml
           badge: true
