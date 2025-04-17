@@ -1,0 +1,71 @@
+name: 'Generate Coverage Table'
+description: 'Parses Cobertura XML and creates a Markdown summary with thresholds.'
+author: 'Daniel Acevedo'
+inputs:
+  filename:
+    description: 'Path to the Cobertura XML file'
+    required: true
+  threshold:
+    description: 'Coverage threshold (e.g., 90 means 90%)'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate Markdown table from Cobertura XML
+      shell: bash
+      run: |
+        python3 <<EOF
+        import xml.etree.ElementTree as ET
+        import os
+        import sys
+
+        filename = "${{ inputs.filename }}"
+        threshold = float("${{ inputs.threshold }}")
+
+        if not os.path.isfile(filename):
+            raise FileNotFoundError(f"File not found: {filename}")
+
+        tree = ET.parse(filename)
+        root = tree.getroot()
+
+        table = "| Assembly        | Line Coverage | Branch Coverage | ✅ {threshold}%+ |\n"
+        table += "|----------------|---------------|------------------|----------------|\n"
+
+        all_pass = True
+        total_line = 0.0
+        total_branch = 0.0
+        count = 0
+
+        for package in root.findall("packages/package"):
+            name = package.attrib["name"]
+            line_rate = float(package.attrib["line-rate"]) * 100
+            branch_rate = float(package.attrib["branch-rate"]) * 100
+
+            passed = "✅" if line_rate >= threshold and branch_rate >= threshold else "❌"
+            if passed == "❌":
+                all_pass = False
+
+            total_line += line_rate
+            total_branch += branch_rate
+            count += 1
+
+            table += f"| {name:<15} | {line_rate:>5.2f}%        | {branch_rate:>5.2f}%           | {passed}          |\n"
+
+        avg_line = total_line / count if count > 0 else 0.0
+        avg_branch = total_branch / count if count > 0 else 0.0
+        summary_pass = "✅" if avg_line >= threshold and avg_branch >= threshold else "❌"
+
+        table += "|----------------|---------------|------------------|----------------|\n"
+        table += f"| **Summary**       | {avg_line:>5.2f}%        | {avg_branch:>5.2f}%           | {summary_pass}          |\n"
+
+        with open("coverage-table.md", "w") as f:
+            f.write(table)
+
+        print("\n" + table)
+
+        if not all_pass:
+            print(f"❌ Coverage threshold of {threshold}% not met by all projects.")
+            sys.exit(1)
+        else:
+            print(f"✅ All projects passed the {threshold}% threshold.")
+        EOF
