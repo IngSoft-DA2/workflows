@@ -149,17 +149,23 @@ jobs:
           threshold: 90
 
       - name: Write Coverage Table to Job Summary
-        if: ${{ env.required_tests == 'true'}}
+        if: ${{ hashFiles('coverage-table.md') != '' && github.event_name == 'pull_request' }}
         run: cat coverage-table.md >> $GITHUB_STEP_SUMMARY
         
       - name: Add Coverage Table as PR Comment
         uses: marocchino/sticky-pull-request-comment@v2
-        if: ${{ github.event_name == 'pull_request' && env.required_tests == 'true' }}
+        if: ${{ hashFiles('coverage-table.md') != '' && github.event_name == 'pull_request' }}
         with:
           header: build-test
           recreate: true
-          path: ${{ hashFiles('coverage-table.md') != '' && 'coverage-table.md' || '' }}
-          message: |
-            ${{ hashFiles('coverage-table.md') != '' && '### Code Coverage Report\n\n' || '⚠️ Code coverage report not found. Tests required.' }}
+          path: 'coverage-table.md'
+      
+      - name: Add Missing Test as PR Comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        if: ${{ hashFiles('coverage-table.md') == '' && github.event_name == 'pull_request' && env.required_tests == 'true' }}
+        with:
+          header: build-test
+          recreate: true
+          message: '### Code Coverage Report\n\n⚠️ Code coverage report not found. Tests required.'
 
       
