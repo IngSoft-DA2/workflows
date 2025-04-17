@@ -31,17 +31,10 @@ jobs:
     permissions: write-all
     runs-on: ${{ fromJson(inputs.self-hosted-labels) }}
     timeout-minutes: 5
-    # env:
-    #     DOTNET_INSTALL_DIR: "/home/runner/.dotnet"
         
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      # - name: Setup .NET
-      #   uses: actions/setup-dotnet@v4
-      #   with:
-      #     dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Install dependencies
         run: dotnet restore ${{ env.FULL_SOLUTION_PATH }}
@@ -65,17 +58,10 @@ jobs:
     needs: [build]
     runs-on: ${{ fromJson(inputs.self-hosted-labels) }}
     timeout-minutes: 5
-    # env:
-    #     DOTNET_INSTALL_DIR: "/home/runner/.dotnet"
         
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        
-      # - name: Setup .NET
-      #   uses: actions/setup-dotnet@v4
-      #   with:
-      #     dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Check for Source Code Files
         run: |
@@ -166,6 +152,6 @@ jobs:
         with:
           header: build-test
           recreate: true
-          message: '### Code Coverage Report\n\n⚠️ Code coverage report not found. Tests required.'
+          message: '⚠️ Code coverage report not found. Tests required.'
 
       
