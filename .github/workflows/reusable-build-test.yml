@@ -131,7 +131,7 @@ jobs:
           path: coverage-report
 
       - name: Generate Coverage Table
-        uses: IngSoft-DA2/generate-coverage-table@v1
+        uses: IngSoft-DA2/workflows@v1
         with:
           filename: coverage-report/Cobertura.xml
           threshold: 90
