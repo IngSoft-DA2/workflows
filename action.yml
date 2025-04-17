@@ -18,59 +18,59 @@ runs:
         import xml.etree.ElementTree as ET
         import os
         import sys
-
+      
         filename = "${{ inputs.filename }}"
         threshold = float("${{ inputs.threshold }}")
-
+      
         if not os.path.isfile(filename):
             raise FileNotFoundError(f"File not found: {filename}")
-
+      
         tree = ET.parse(filename)
         root = tree.getroot()
-
+      
         table = f"| Assembly        | Line Coverage | Branch Coverage | Health (over {threshold}%) |\n"
-        table += "|----------------|----------------------|--------------------------|------------------------|\n"
-
+        table += "|----------------|---------------|-----------------|-----------------------------|\n"
+      
         all_pass = True
-        total_lines_covered = total_lines_valid = 0
-        total_branches_covered = total_branches_valid = 0
-
+        total_line_rate = 0.0
+        total_branch_rate = 0.0
+        count = 0
+      
         for package in root.findall("packages/package"):
             name = package.attrib["name"]
-            lines_covered = int(package.attrib.get("lines-covered", 0))
-            lines_valid = int(package.attrib.get("lines-valid", 0))
-            branches_covered = int(package.attrib.get("branches-covered", 0))
-            branches_valid = int(package.attrib.get("branches-valid", 0))
-
-            line_rate = (lines_covered / lines_valid * 100) if lines_valid else 0.0
-            branch_rate = (branches_covered / branches_valid * 100) if branches_valid else 0.0
-
-            total_lines_covered += lines_covered
-            total_lines_valid += lines_valid
-            total_branches_covered += branches_covered
-            total_branches_valid += branches_valid
-
+            line_rate = float(package.attrib.get("line-rate", 0)) * 100
+            branch_rate = float(package.attrib.get("branch-rate", 0)) * 100
+      
+            total_line_rate += line_rate
+            total_branch_rate += branch_rate
+            count += 1
+      
             passed = "✅" if line_rate >= threshold and branch_rate >= threshold else "❌"
             if passed == "❌":
                 all_pass = False
-
-            table += f"| {name:<15} | {line_rate:>5.2f}% ({lines_covered}/{lines_valid}) | {branch_rate:>5.2f}% ({branches_covered}/{branches_valid}) | {passed} |\n"
-
-        total_line_rate = (total_lines_covered / total_lines_valid * 100) if total_lines_valid else 0.0
-        total_branch_rate = (total_branches_covered / total_branches_valid * 100) if total_branches_valid else 0.0
-        summary_pass = "✅" if total_line_rate >= threshold and total_branch_rate >= threshold else "❌"
-
-        table += "|----------------|----------------------|--------------------------|------------------------|\n"
-        table += f"| **Summary**     | **{total_line_rate:>5.2f}% ({total_lines_covered}/{total_lines_valid})** | **{total_branch_rate:>5.2f}% ({total_branches_covered}/{total_branches_valid})** | {summary_pass} |\n"
-
+      
+            table += f"| {name:<15} | {line_rate:>5.2f}%        | {branch_rate:>5.2f}%         | {passed}                         |\n"
+      
+        avg_line = total_line_rate / count if count > 0 else 0.0
+        avg_branch = total_branch_rate / count if count > 0 else 0.0
+        summary_pass = "✅" if avg_line >= threshold and avg_branch >= threshold else "❌"
+      
+        table += "|----------------|---------------|-----------------|-----------------------------|\n"
+        table += f"| **Summary**     | **{avg_line:>5.2f}%**     | **{avg_branch:>5.2f}%**      | {summary_pass}                         |\n"
+      
+        if not all_pass:
+            table += f"\n*Minimum allowed code coverage is {threshold}%*\n"
+        else:
+            table += f"\n*Awesome! All assemblies passed the minimum {threshold}% threshold 🚀*\n"
+      
         with open("coverage-table.md", "w") as f:
             f.write(table)
-
+      
         print("\n" + table)
-
+      
         if not all_pass:
-            print(f"❌ Coverage threshold of {threshold}% not met by all projects.")
+            print(f"❌ Minimum threshold to pass for all assemblies is: {threshold}%.")
             sys.exit(1)
         else:
-            print(f"✅ All projects passed the {threshold}% threshold.")
+            print(f"✅ All assemblies passed the minimum threshold {threshold}%.")
         EOF
