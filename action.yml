@@ -28,35 +28,40 @@ runs:
         tree = ET.parse(filename)
         root = tree.getroot()
 
-        table = "| Assembly        | Line Coverage | Branch Coverage | ✅ {threshold}%+ |\n"
-        table += "|----------------|---------------|------------------|----------------|\n"
+        table = f"| Assembly        | Line Coverage | Branch Coverage | Health (over {threshold}%) |\n"
+        table += "|----------------|----------------------|--------------------------|------------------------|\n"
 
         all_pass = True
-        total_line = 0.0
-        total_branch = 0.0
-        count = 0
+        total_lines_covered = total_lines_valid = 0
+        total_branches_covered = total_branches_valid = 0
 
         for package in root.findall("packages/package"):
             name = package.attrib["name"]
-            line_rate = float(package.attrib["line-rate"]) * 100
-            branch_rate = float(package.attrib["branch-rate"]) * 100
+            lines_covered = int(package.attrib.get("lines-covered", 0))
+            lines_valid = int(package.attrib.get("lines-valid", 0))
+            branches_covered = int(package.attrib.get("branches-covered", 0))
+            branches_valid = int(package.attrib.get("branches-valid", 0))
+
+            line_rate = (lines_covered / lines_valid * 100) if lines_valid else 0.0
+            branch_rate = (branches_covered / branches_valid * 100) if branches_valid else 0.0
+
+            total_lines_covered += lines_covered
+            total_lines_valid += lines_valid
+            total_branches_covered += branches_covered
+            total_branches_valid += branches_valid
 
             passed = "✅" if line_rate >= threshold and branch_rate >= threshold else "❌"
             if passed == "❌":
                 all_pass = False
 
-            total_line += line_rate
-            total_branch += branch_rate
-            count += 1
+            table += f"| {name:<15} | {line_rate:>5.2f}% ({lines_covered}/{lines_valid}) | {branch_rate:>5.2f}% ({branches_covered}/{branches_valid}) | {passed} |\n"
 
-            table += f"| {name:<15} | {line_rate:>5.2f}%        | {branch_rate:>5.2f}%           | {passed}          |\n"
+        total_line_rate = (total_lines_covered / total_lines_valid * 100) if total_lines_valid else 0.0
+        total_branch_rate = (total_branches_covered / total_branches_valid * 100) if total_branches_valid else 0.0
+        summary_pass = "✅" if total_line_rate >= threshold and total_branch_rate >= threshold else "❌"
 
-        avg_line = total_line / count if count > 0 else 0.0
-        avg_branch = total_branch / count if count > 0 else 0.0
-        summary_pass = "✅" if avg_line >= threshold and avg_branch >= threshold else "❌"
-
-        table += "|----------------|---------------|------------------|----------------|\n"
-        table += f"| **Summary**       | {avg_line:>5.2f}%        | {avg_branch:>5.2f}%           | {summary_pass}          |\n"
+        table += "|----------------|----------------------|--------------------------|------------------------|\n"
+        table += f"| **Summary**     | **{total_line_rate:>5.2f}% ({total_lines_covered}/{total_lines_valid})** | **{total_branch_rate:>5.2f}% ({total_branches_covered}/{total_branches_valid})** | {summary_pass} |\n"
 
         with open("coverage-table.md", "w") as f:
             f.write(table)
