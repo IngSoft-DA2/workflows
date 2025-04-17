@@ -171,7 +171,7 @@ jobs:
         with:
           header: build-test
           recreate: true
-          path: ${{ hashFiles('coverage-report/AssembliesSummary.md') != '' && 'coverage-report/AssembliesSummary.md' || '' }}
+          path: ${{ hashFiles('coverage-report/Summary.md') != '' && 'coverage-report/Summary.md' || '' }}
           message: |
             ${{ hashFiles('code-coverage-results.md') != '' && '### Code Coverage Report\n\n' || '⚠️ Code coverage report not found. Tests required.' }}
 
@@ -188,7 +188,7 @@ jobs:
 
       - name: Write to Job Summary
         if: ${{ always() && env.required_tests == 'true'}}
-        run: cat coverage-report/AssembliesSummary.md >> $GITHUB_STEP_SUMMARY
+        run: cat coverage-report/Summary.md >> $GITHUB_STEP_SUMMARY
 
       # 📝 Comment on PR when blocked
       - name: Comment on PR if Tests Fail
