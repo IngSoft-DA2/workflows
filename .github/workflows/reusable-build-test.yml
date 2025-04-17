@@ -142,7 +142,7 @@ jobs:
           path: coverage-report
 
       - name: Generate Coverage Table
-        uses: IngSoft-DA2/workflows@v1.1
+        uses: IngSoft-DA2/workflows@v1.2
         if: ${{ env.required_tests == 'true'}}
         with:
           filename: coverage-report/Cobertura.xml
