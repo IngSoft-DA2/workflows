@@ -130,8 +130,8 @@ jobs:
           name: Coverage Report       
           path: coverage-report
 
-      - name: Generate coverage table
-        uses: ./.github/actions/generate-coverage-table
+      - name: Generate Coverage Table
+        uses: IngSoft-DA2/generate-coverage-table@v1
         with:
           filename: coverage-report/Cobertura.xml
           threshold: 90
