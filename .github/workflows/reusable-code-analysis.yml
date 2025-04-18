@@ -23,7 +23,7 @@ env:
 jobs:
   analysis:
     name: Analysis
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJson(inputs.self-hosted-labels) }}
     timeout-minutes: 5
     env:
         DOTNET_INSTALL_DIR: "/home/runner/.dotnet"
