@@ -23,19 +23,12 @@ env:
 jobs:
   analysis:
     name: Analysis
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJson(inputs.self-hosted-labels) }}
     timeout-minutes: 5
-    env:
-        DOTNET_INSTALL_DIR: "/home/runner/.dotnet"
         
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Run code analysis report
         run: dotnet format ${{ ENV.FULL_SOLUTION_PATH }} --verify-no-changes --verbosity diagnostic --report ./analysis
