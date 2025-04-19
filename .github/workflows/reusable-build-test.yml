@@ -24,7 +24,7 @@ jobs:
   build:
     name: Build
     permissions: write-all
-    runs-on: [self-hosted]
+    runs-on: self-hosted
     timeout-minutes: 5
         
     steps:
@@ -51,7 +51,7 @@ jobs:
     name: Test
     permissions: write-all
     needs: [build]
-    runs-on: [self-hosted]
+    runs-on: self-hosted
     timeout-minutes: 5
         
     steps:
