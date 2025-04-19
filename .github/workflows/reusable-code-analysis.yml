@@ -10,11 +10,6 @@ on:
         type: string
         description: 'The name of the solution file (e.g., MyApp.sln)'
         required: true
-      self-hosted-labels:
-        type: string
-        description: 'Comma-separated list of self-hosted runner labels'
-        required: true
-        default: '[ ubuntu-latest ]'
 
 env:
   DOTNET_VERSION: '8.0.x' # The .NET SDK version to use
@@ -23,7 +18,7 @@ env:
 jobs:
   analysis:
     name: Analysis
-    runs-on: ${{ fromJson(inputs.self-hosted-labels) }}
+    runs-on: self-hosted
     timeout-minutes: 5
         
     steps:
