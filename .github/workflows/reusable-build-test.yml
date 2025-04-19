@@ -15,11 +15,6 @@ on:
         description: 'A title for the coverage report (default: Reporte de Cobertura)'
         required: false
         default: 'Reporte de Cobertura'
-      self-hosted-labels:
-        type: string
-        description: 'Comma-separated list of self-hosted runner labels'
-        required: true
-        default: '[ ubuntu-latest ]'
 
 env:
   DOTNET_VERSION: '8.0.x' # The .NET SDK version to use
@@ -29,7 +24,7 @@ jobs:
   build:
     name: Build
     permissions: write-all
-    runs-on: ${{ fromJson(inputs.self-hosted-labels) }}
+    runs-on: [self-hosted]
     timeout-minutes: 5
         
     steps:
@@ -56,7 +51,7 @@ jobs:
     name: Test
     permissions: write-all
     needs: [build]
-    runs-on: ${{ fromJson(inputs.self-hosted-labels) }}
+    runs-on: [self-hosted]
     timeout-minutes: 5
         
     steps:
