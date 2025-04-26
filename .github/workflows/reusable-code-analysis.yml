@@ -44,4 +44,4 @@ jobs:
           header: analysis
           recreate: true
           message: |
-            ❌ The analysis failed. The PR has been marked as **Blocked: Analysis Fix Required**. Please fix the issues before pushing again.
+            ❌ The clean code analysis failed. Please fix the issues before pushing again.
