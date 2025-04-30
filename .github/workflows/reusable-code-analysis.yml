@@ -19,7 +19,7 @@ jobs:
   analysis:
     name: Analysis
     runs-on: self-hosted
-    timeout-minutes: 5
+    # timeout-minutes: 5
         
     steps:
       - name: Checkout Repository
