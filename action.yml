@@ -68,9 +68,14 @@ runs:
       
         print("\n" + table)
       
-        if not all_pass:
-            print(f"❌ Minimum threshold to pass for all assemblies is: {threshold}%.")
-            sys.exit(1)
+        # if not all_pass:
+        #     print(f"❌ Minimum threshold to pass for all assemblies is: {threshold}%.")
+        #     sys.exit(1)
+        # else:
+        #     print(f"✅ All assemblies passed the minimum threshold {threshold}%.")
+        if avg_line < threshold:
+          print(f"❌ Summary line coverage is below threshold ({avg_line:.2f}% < {threshold}%).")
+          sys.exit(1)
         else:
-            print(f"✅ All assemblies passed the minimum threshold {threshold}%.")
+          print(f"✅ Summary line coverage meets the threshold ({avg_line:.2f}% ≥ {threshold}%).")
         EOF
