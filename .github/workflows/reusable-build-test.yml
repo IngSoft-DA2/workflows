@@ -25,7 +25,7 @@ jobs:
     name: Build
     permissions: write-all
     runs-on: self-hosted
-    timeout-minutes: 5
+    # timeout-minutes: 5
         
     steps:
       - name: Checkout Repository
@@ -52,7 +52,7 @@ jobs:
     permissions: write-all
     needs: [build]
     runs-on: self-hosted
-    timeout-minutes: 5
+    # timeout-minutes: 5
         
     steps:
       - name: Checkout Repository
