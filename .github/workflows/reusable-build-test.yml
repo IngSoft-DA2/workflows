@@ -77,7 +77,7 @@ jobs:
 
       - name: Generate Test Results and Coverage Reports
         if: ${{ env.required_tests == 'true' }}
-        run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ./test-results --collect:"XPlat Code Coverage" --settings .runsettings
+        run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ${{ inputs.solution-path }}/test-results --collect:"XPlat Code Coverage" --settings .runsettings
 
       - name: Uploaded Results Report
         if: ${{ always() && env.required_tests == 'true' }}
