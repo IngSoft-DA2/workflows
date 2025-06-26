@@ -82,7 +82,7 @@ jobs:
 
       - name: Run code analysis report
         if: false
-        run: dotnet format ${{ ENV.FULL_SOLUTION_PATH }} --verify-no-changes --verbosity diagnostic --report ./analysis
+        run: dotnet format ${{ ENV.FULL_SOLUTION_PATH }} --verify-no-changes --verbosity diagnostic --report ${{ inputs.solution-path}}/analysis
 
       - name: Upload code analysis report
         if: ${{ false && always() && needs.can_run.outputs.buildLabelOff == 'true' && needs.can_run.outputs.testsLabelOff == 'true' && needs.can_run.outputs.analysisLabelOff == 'true' }}
