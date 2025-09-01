@@ -59,7 +59,7 @@ runs:
         table += f"| **Summary**     | **{avg_line:>5.2f}%**     | **{avg_branch:>5.2f}%**      | {summary_pass}                         |\n"
       
         if not all_pass:
-            table += f"\n*Minimum allowed code coverage is {threshold}%*\n"
+            table += f"\n*Minimum allowed code coverage is {threshold}% for line rate and branch rate*\n"
         else:
             table += f"\n*Awesome! All assemblies passed the minimum {threshold}% threshold 🚀*\n"
       
@@ -68,14 +68,14 @@ runs:
       
         print("\n" + table)
       
-        # if not all_pass:
-        #     print(f"❌ Minimum threshold to pass for all assemblies is: {threshold}%.")
-        #     sys.exit(1)
-        # else:
-        #     print(f"✅ All assemblies passed the minimum threshold {threshold}%.")
-        if avg_line < threshold:
-          print(f"❌ Summary line coverage is below threshold ({avg_line:.2f}% < {threshold}%).")
-          sys.exit(1)
+        if not all_pass:
+            print(f"❌ Minimum threshold to pass for all assemblies is: {threshold}%.")
+            sys.exit(1)
         else:
-          print(f"✅ Summary line coverage meets the threshold ({avg_line:.2f}% ≥ {threshold}%).")
+            print(f"✅ All assemblies passed the minimum threshold {threshold}%.")
+        # if avg_line < threshold:
+        #   print(f"❌ Summary line coverage is below threshold ({avg_line:.2f}% < {threshold}%).")
+        #   sys.exit(1)
+        # else:
+        #   print(f"✅ Summary line coverage meets the threshold ({avg_line:.2f}% ≥ {threshold}%).")
         EOF
