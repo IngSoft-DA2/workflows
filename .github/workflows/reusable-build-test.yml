@@ -140,6 +140,25 @@ jobs:
           header: build-test
           recreate: true
           path: 'coverage-table.md'
+
+      - name: Comment Coverage Artifact Info as PR Comment
+        if: ${{ always() && github.event_name == 'pull_request' && env.required_tests == 'true' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: build-test
+          append: true
+          message: |
+            📊 **Reporte de cobertura disponible**
+            El reporte completo de la cobertura de codigo esta adjunto como un artefacto para descargar [aqui](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+            **Como usarlo:**
+            1. Ir a la ejecución de la action. Puede ser a traves del link arriba o haciendo click en la sección de abajo.
+            2. Hacer click en "Code Coverage".
+            2. Unzip el artefacto.
+            3. Abrir `index.html` en el buscador.
+            4. Inspeccionar el resultado de la cobertura interactivamente.
+
+            _El artefacto contiene un reporte de la cobertura en HTML generado por las pruebas._
       
       - name: Add Missing Test as PR Comment
         uses: marocchino/sticky-pull-request-comment@v2
