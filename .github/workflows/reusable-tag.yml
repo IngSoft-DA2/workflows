@@ -48,7 +48,7 @@ jobs:
 
           # Set the output
           echo "GIT_TAGS=$GIT_TAGS"
-          echo "::set-output name=tags::$GIT_TAGS"
+          echo "tags=$GIT_TAGS" >> $GITHUB_OUTPUT
           
       - name: Bumped Tag
         id: bumped_tag
@@ -75,7 +75,7 @@ jobs:
             # Bump the major version
             BUMPED=$(echo $LATEST | awk -F. '{ print $1 "." ($2 + 1) ".0" }')
 
-          elif [ "${{ github.ref_name }}" == "${{ inputs.patch }}"]; then
+          elif [ "${{ github.ref_name }}" == "${{ inputs.patch }}" ]; then
             # Bump the patch version
             BUMPED=$(echo $LATEST | awk -F. '{ print $1 "." $2 "." ($3 + 1) }')
           
@@ -85,7 +85,7 @@ jobs:
           
           echo "bumping ${LATEST} to ${BUMPED}"
           
-          echo "::set-output name=bumped::$BUMPED"
+          echo "bumped=$BUMPED" >> $GITHUB_OUTPUT
           
       - name: Push Bumped Tag
         run: |
@@ -93,6 +93,11 @@ jobs:
           git config --global user.name "${{ github.actor }}"
 
           BUMPED="${{ steps.bumped_tag.outputs.bumped }}"
-          
+
+          if [ -z "$BUMPED" ]; then
+            echo "BUMPED tag is empty, aborting."
+            exit 1
+          fi
+
           git tag --annotate "$BUMPED" --message "via GitHub Actions"
           git push origin "$BUMPED"
