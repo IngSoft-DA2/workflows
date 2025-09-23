@@ -43,12 +43,16 @@ jobs:
           # Fetch the tags
           git fetch --tags origin
           
-          # Find the latest tag
+          # Find the tags
           GIT_TAGS=$(git tag | egrep '^[0-9]+\.[0-9]+(\.[0-9]+)?$' || true)
-
+          
+          # Find the lastest
+          
+          LATEST_TAG=$(echo "$GIT_TAGS" | tail -n 1)
+          
           # Set the output
-          echo "GIT_TAGS=$GIT_TAGS"
-          echo "tags=$GIT_TAGS" >> $GITHUB_OUTPUT
+          echo "LATEST_TAG=$LATEST_TAG"
+          echo "tags=$LATEST_TAG" >> $GITHUB_OUTPUT
           
       - name: Bumped Tag
         id: bumped_tag
