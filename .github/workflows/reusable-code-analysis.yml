@@ -38,7 +38,6 @@ jobs:
 
       - name: Generate Clean Code Analysis Table Report
         uses: IngSoft-DA2/workflows/code-analysis-report/@action-clean-code-analysis-report-v1.0
-        if: ${{ env.required_tests == 'true'}}
         with:
           filename: ${{ inputs.solution-path }}/analysis/format-report.json
             
