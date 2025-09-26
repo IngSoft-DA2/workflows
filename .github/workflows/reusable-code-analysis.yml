@@ -36,11 +36,11 @@ jobs:
           path: ${{ inputs.solution-path }}/analysis/format-report.json
           retention-days: 1
 
-      # - name: Generate Clean Code Analysis Table Report
-      #   uses: IngSoft-DA2/workflows/code-analysis-report/@action-clean-code-analysis-report-v1.0
-      #   if: ${{ env.required_tests == 'true'}}
-      #   with:
-      #     filename: ${{ inputs.solution-path }}/analysis/format-report.json
+      - name: Generate Clean Code Analysis Table Report
+        uses: IngSoft-DA2/workflows/code-analysis-report/@action-clean-code-analysis-report-v1.0
+        if: ${{ env.required_tests == 'true'}}
+        with:
+          filename: ${{ inputs.solution-path }}/analysis/format-report.json
             
        # 📝 Comment on PR when blocked
       - name: Comment on PR if Analysis Fail
