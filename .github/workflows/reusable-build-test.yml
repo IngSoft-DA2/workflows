@@ -17,15 +17,16 @@ on:
         default: 'Reporte de Cobertura'
 
 env:
-  DOTNET_VERSION: '8.0.x' # The .NET SDK version to use
+  DOTNET_VERSION: '8.0.x'
   FULL_SOLUTION_PATH: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
+  TEST_RESULTS_DIR: ${{ github.workspace }}/test-results
+  COVERAGE_REPORT_DIR: ${{ github.workspace }}/coverage-report
 
 jobs:
   build:
     name: Build
     permissions: write-all
     runs-on: self-hosted
-    # timeout-minutes: 5
         
     steps:
       - name: Checkout Repository
@@ -37,7 +38,6 @@ jobs:
       - name: Run build
         run: dotnet build ${{ env.FULL_SOLUTION_PATH }} --configuration Release
             
-       # 📝 Comment on PR when blocked
       - name: Comment on PR if Build Fail
         if: ${{ failure() && github.event_name == 'pull_request' }}
         uses: marocchino/sticky-pull-request-comment@v2
@@ -52,7 +52,6 @@ jobs:
     permissions: write-all
     needs: [build]
     runs-on: self-hosted
-    # timeout-minutes: 5
         
     steps:
       - name: Checkout Repository
@@ -60,7 +59,6 @@ jobs:
 
       - name: Check for Source Code Files
         run: |
-          # Find source code files excluding Program.cs, Migrations, and *DbContext.cs, *Context.cs
           SOURCE_FILES=$(find ${{ inputs.solution-path }} -type f -name "*.cs" \
             ! -name "Program.cs" \
             ! -name "*DbContext.cs" \
@@ -77,14 +75,14 @@ jobs:
 
       - name: Generate Test Results and Coverage Reports
         if: ${{ env.required_tests == 'true' }}
-        run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ${{ inputs.solution-path }}/test-results --collect:"XPlat Code Coverage" --settings .runsettings
+        run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ${{ env.TEST_RESULTS_DIR }} --collect:"XPlat Code Coverage" --settings .runsettings
 
       - name: Uploaded Results Report
         if: ${{ always() && env.required_tests == 'true' }}
         uses: dorny/test-reporter@v1
         with:
           name: Uploaded Results Report
-          path: ${{ inputs.solution-path }}/test-results/test-results*.trx
+          path: ${{ env.TEST_RESULTS_DIR }}/test-results*.trx
           reporter: dotnet-trx
           path-replace-backslashes: false
           list-suites: all
@@ -94,7 +92,6 @@ jobs:
           fail-on-empty: true
           only-summary: false
 
-      # 📝 Comment on PR when blocked
       - name: Comment on PR if Tests Fail
         if: ${{ failure() && github.event_name == 'pull_request' && env.required_tests == 'true' }}
         uses: marocchino/sticky-pull-request-comment@v2
@@ -108,8 +105,8 @@ jobs:
         if: ${{ env.required_tests == 'true' }}
         uses: danielpalme/ReportGenerator-GitHub-Action@5.3.9
         with:
-          reports: ${{ inputs.solution-path }}/test-results/**/coverage.cobertura.xml
-          targetdir: coverage-report
+          reports: ${{ env.TEST_RESULTS_DIR }}/**/coverage.cobertura.xml
+          targetdir: ${{ env.COVERAGE_REPORT_DIR }}
           reporttypes: 'Html;Cobertura'
           verbosity: 'Verbose'
           tag: '${{ github.run_number }}_${{ github.run_id }}'
@@ -120,13 +117,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Coverage Report       
-          path: coverage-report
+          path: ${{ env.COVERAGE_REPORT_DIR }}
 
       - name: Generate Coverage Table
-        uses: IngSoft-DA2/workflows@v1.4
+        uses: IngSoft-DA2/workflows@v1.5
         if: ${{ env.required_tests == 'true'}}
         with:
-          filename: coverage-report/Cobertura.xml
+          filename: ${{ env.COVERAGE_REPORT_DIR }}/Cobertura.xml
           threshold: 90
 
       - name: Write Coverage Table to Job Summary
@@ -166,5 +163,3 @@ jobs:
           header: build-test
           recreate: true
           message: '⚠️ Code coverage report not found. Tests required.'
-
-      
