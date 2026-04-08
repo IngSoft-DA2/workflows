@@ -23,7 +23,8 @@ runs:
         threshold = float("${{ inputs.threshold }}")
       
         if not os.path.isfile(filename):
-            raise FileNotFoundError(f"File not found: {filename}")
+            print(f"❌ Coverage file not found: {filename}.")
+            sys.exit(1)
       
         tree = ET.parse(filename)
         root = tree.getroot()
@@ -51,8 +52,12 @@ runs:
       
             table += f"| {name:<15} | {line_rate:>5.2f}%        | {branch_rate:>5.2f}%         | {passed}                         |\n"
       
-        avg_line = total_line_rate / count if count > 0 else 0.0
-        avg_branch = total_branch_rate / count if count > 0 else 0.0
+        if count == 0:
+            print("❌ No assemblies found in the coverage report.")
+            sys.exit(1)
+
+        avg_line = total_line_rate / count
+        avg_branch = total_branch_rate / count
         summary_pass = "✅" if avg_line >= threshold and avg_branch >= threshold else "❌"
       
         table += "|----------------|---------------|-----------------|-----------------------------|\n"
@@ -73,9 +78,4 @@ runs:
             sys.exit(1)
         else:
             print(f"✅ All assemblies passed the minimum threshold {threshold}%.")
-        # if avg_line < threshold:
-        #   print(f"❌ Summary line coverage is below threshold ({avg_line:.2f}% < {threshold}%).")
-        #   sys.exit(1)
-        # else:
-        #   print(f"✅ Summary line coverage meets the threshold ({avg_line:.2f}% ≥ {threshold}%).")
         EOF
