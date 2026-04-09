@@ -73,9 +73,25 @@ jobs:
             echo "required_tests=false" >> $GITHUB_ENV
           fi
 
+      - name: Find .runsettings file
+        run: |
+          RUNSETTINGS_PATH=$(find ${{ github.workspace }} -name "*.runsettings" | head -1)
+          if [[ -z "$RUNSETTINGS_PATH" ]]; then
+            echo "⚠️ No .runsettings file found, proceeding without it."
+            echo "RUNSETTINGS_PATH=" >> $GITHUB_ENV
+          else
+            echo "✅ Found .runsettings at: $RUNSETTINGS_PATH"
+            echo "RUNSETTINGS_PATH=$RUNSETTINGS_PATH" >> $GITHUB_ENV
+          fi
+
       - name: Generate Test Results and Coverage Reports
         if: ${{ env.required_tests == 'true' }}
-        run: dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ${{ env.TEST_RESULTS_DIR }} --collect:"XPlat Code Coverage" --settings .runsettings
+        run: |
+          SETTINGS_ARG=""
+          if [[ -n "${{ env.RUNSETTINGS_PATH }}" ]]; then
+            SETTINGS_ARG="--settings ${{ env.RUNSETTINGS_PATH }}"
+          fi
+          dotnet test ${{ env.FULL_SOLUTION_PATH }} --configuration Release --verbosity normal --logger "trx;LogFilePrefix=test-results" --results-directory ${{ env.TEST_RESULTS_DIR }} --collect:"XPlat Code Coverage" $SETTINGS_ARG
 
       - name: Uploaded Results Report
         if: ${{ always() && env.required_tests == 'true' }}
@@ -104,6 +120,15 @@ jobs:
       - name: Debug ReportGenerator Input
         if: ${{ env.required_tests == 'true' }}
         run: find ${{ env.TEST_RESULTS_DIR }} -name "coverage.cobertura.xml" | xargs wc -l
+
+      - name: Debug Coverage XML Content
+        if: ${{ env.required_tests == 'true' }}
+        run: |
+          find ${{ env.TEST_RESULTS_DIR }} -name "coverage.cobertura.xml" | while read f; do
+            echo "=== $f ==="
+            cat "$f"
+            echo ""
+          done
 
       - name: Join Coverage Reports
         if: ${{ env.required_tests == 'true' }}
