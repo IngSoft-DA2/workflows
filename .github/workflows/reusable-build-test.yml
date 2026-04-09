@@ -100,6 +100,15 @@ jobs:
           recreate: true
           message: |
             ❌ The tests failed. Please fix the issues before pushing again.
+      - name: Debug Coverage Files
+        if: ${{ env.required_tests == 'true' }}
+        run: |
+          echo "=== TRX files ==="
+          find ${{ github.workspace }}/test-results -name "*.trx"
+          echo "=== Coverage XML files ==="
+          find ${{ github.workspace }}/test-results -name "*.xml"
+          echo "=== All test-results content ==="
+          find ${{ github.workspace }}/test-results -type f
 
       - name: Join Coverage Reports
         if: ${{ env.required_tests == 'true' }}
