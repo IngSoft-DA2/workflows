@@ -19,7 +19,6 @@ on:
         required: false
         default: '8.0.x'
 
-# ── Minimal permissions (principle of least privilege) ───
 permissions:
   contents: read
   pull-requests: write
@@ -76,7 +75,7 @@ jobs:
             --verbosity diagnostic \
             --report "${{ inputs.solution-path }}/analysis"
 
-      # ── 7. Annotate PR with file-level issues ───────────────
+      # ── 7. Annotate PR with issues ──────────────────────────
       - name: Annotate PR with issues
         if: failure() && github.event_name == 'pull_request'
         uses: actions/github-script@v7
@@ -86,22 +85,21 @@ jobs:
             const reportPath = '${{ inputs.solution-path }}/analysis/format-report.json';
             if (!fs.existsSync(reportPath)) { console.log('No report found'); return; }
             const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            const workspace = process.env.GITHUB_WORKSPACE;
             let count = 0;
             for (const file of report) {
-              for (const change of (file.Changes || [])) {
+              for (const change of (file.FileChanges || [])) {
+                const relativePath = file.FilePath.replace(workspace + '/', '');
                 core.warning(
-                  `[${change.FormatDescription ?? 'format issue'}]`,
-                  {
-                    file: file.FilePath?.replace(/\\/g, '/'),
-                    startLine: change.LineNumber ?? 1,
-                  }
+                  `${change.DiagnosticId}: ${change.FormatDescription}`,
+                  { file: relativePath, startLine: change.LineNumber ?? 1, col: change.CharNumber ?? 1 }
                 );
                 count++;
               }
             }
             console.log(`Total issues annotated: ${count}`);
 
-      # ── 8. Upload analysis report (always) ──────────────────
+      # ── 8. Upload analysis report ───────────────────────────
       - name: Upload code analysis report
         if: always()
         uses: actions/upload-artifact@v4
@@ -111,7 +109,7 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
-      # ── 9. Generate table report (opt-in) ───────────────────
+      # ── 9. Generate table report ────────────────────────────
       - name: Generate clean code analysis table report
         if: always()
         uses: IngSoft-DA2/workflows/code-analysis-report/@action-clean-code-analysis-report-v1.0
@@ -135,10 +133,6 @@ jobs:
             echo "| **.NET SDK** | \`${{ inputs.dotnet-version }}\` |"
             echo "| **Runner** | \`${{ runner.os }}\` |"
             echo "| **Triggered by** | \`${{ github.event_name }}\` |"
-            if [ "$STATUS" != "success" ]; then
-              echo ""
-              echo "> The analysis report artifact contains the full list of issues."
-            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       # ── 11a. PR comment — failure ───────────────────────────
@@ -158,7 +152,7 @@ jobs:
             dotnet format ${{ env.FULL_SOLUTION_PATH }}
             ```
 
-            The full report is attached as an artifact in the [Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+            Full details in the [Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
 
       # ── 11b. PR comment — success ───────────────────────────
       - name: Comment on PR — analysis passed
