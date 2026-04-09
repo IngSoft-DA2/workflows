@@ -159,6 +159,8 @@ jobs:
             exit 1
           else
             echo "COVERLET_FAILED=false" >> $GITHUB_ENV
+            TEST_PROJECT_COUNT=$(echo "$TEST_PROJECTS" | wc -l)
+            echo "TEST_PROJECT_COUNT=$TEST_PROJECT_COUNT" >> $GITHUB_ENV
           fi
 
       # ── 4b. Job summary — missing coverlet ────────────────
@@ -292,6 +294,65 @@ jobs:
           verbosity: 'Verbose'
           tag: '${{ github.run_number }}_${{ github.run_id }}'
           title: '${{ inputs.report-coverage-title }}'
+
+      # ── 12b. Validate coverage package count ──────────────
+      - name: Validate Coverage Package Count
+        if: env.required_tests == 'true'
+        run: |
+          COBERTURA_FILE="${{ env.COVERAGE_REPORT_DIR }}/Cobertura.xml"
+
+          if [[ ! -f "$COBERTURA_FILE" ]]; then
+            echo "❌ Cobertura.xml not found."
+            exit 1
+          fi
+
+          PACKAGE_COUNT=$(python3 -c "
+          import xml.etree.ElementTree as ET
+          tree = ET.parse('$COBERTURA_FILE')
+          root = tree.getroot()
+          print(len(root.findall('packages/package')))
+          ")
+
+          echo "📦 Test projects detected: ${{ env.TEST_PROJECT_COUNT }}"
+          echo "📊 Packages in coverage report: $PACKAGE_COUNT"
+
+          echo "PACKAGE_COUNT=$PACKAGE_COUNT" >> $GITHUB_ENV
+
+          if [[ "$PACKAGE_COUNT" -ne "${{ env.TEST_PROJECT_COUNT }}" ]]; then
+            echo "COVERAGE_COUNT_MISMATCH=true" >> $GITHUB_ENV
+            exit 1
+          else
+            echo "COVERAGE_COUNT_MISMATCH=false" >> $GITHUB_ENV
+            echo "✅ Package count matches: $PACKAGE_COUNT"
+          fi
+
+      # ── 12c. Job summary — package count mismatch ─────────
+      - name: Report Coverage Package Count Mismatch
+        if: failure() && env.COVERAGE_COUNT_MISMATCH == 'true'
+        run: |
+          {
+            echo "## ⚠️ Coverage package count mismatch"
+            echo ""
+            echo "The number of packages in the coverage report does not match the number of test projects detected."
+            echo ""
+            echo "| | Count |"
+            echo "|---|---|"
+            echo "| **Test projects detected** | ${{ env.TEST_PROJECT_COUNT }} |"
+            echo "| **Packages in coverage report** | ${{ env.PACKAGE_COUNT }} |"
+            echo ""
+            echo "This usually means one or more projects are not being instrumented correctly."
+            echo "Check that all test projects have \`coverlet.collector\` and that the \`.runsettings\` exclusions are not too aggressive."
+          } > /tmp/coverage-mismatch-report.md
+          cat /tmp/coverage-mismatch-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      # ── 12d. PR comment — package count mismatch ──────────
+      - name: Comment on PR — coverage package count mismatch
+        if: failure() && env.COVERAGE_COUNT_MISMATCH == 'true' && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: build-test
+          append: true
+          path: '/tmp/coverage-mismatch-report.md'
 
       # ── 13. Upload coverage report artifact ───────────────
       - name: Upload Coverage Report
