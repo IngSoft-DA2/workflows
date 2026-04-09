@@ -151,10 +151,10 @@ jobs:
           fi
 
       # ── 5. Validate coverlet.collector ────────────────────
+      # ── 5. Validate coverlet.collector ────────────────────
       - name: Validate Coverlet Collector in Test Projects
         if: env.required_tests == 'true'
         run: |
-          MISSING_COVERLET=false
           TEST_PROJECTS=$(find ${{ github.workspace }} -name "*.csproj" | xargs grep -l "MSTest\|xunit\|NUnit" 2>/dev/null | sort -u)
 
           if [[ -z "$TEST_PROJECTS" ]]; then
@@ -165,14 +165,14 @@ jobs:
           for proj in $TEST_PROJECTS; do
             if ! grep -q "coverlet.collector" "$proj"; then
               echo "::error file=$proj::Missing coverlet.collector in $proj"
-              echo "$proj" >> /tmp/missing_coverlet_projects.txt
-              MISSING_COVERLET=true
+              echo "$proj" >> /tmp/missing_coverlet_projects_raw.txt
             else
               echo "✅ coverlet.collector found in: $proj"
             fi
           done
 
-          if [[ "$MISSING_COVERLET" == "true" ]]; then
+          if [[ -f /tmp/missing_coverlet_projects_raw.txt ]]; then
+            sort -u /tmp/missing_coverlet_projects_raw.txt > /tmp/missing_coverlet_projects.txt
             echo "COVERLET_FAILED=true" >> $GITHUB_ENV
             exit 1
           else
