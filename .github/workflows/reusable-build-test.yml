@@ -155,7 +155,7 @@ jobs:
         if: env.required_tests == 'true'
         run: |
           MISSING_COVERLET=false
-          TEST_PROJECTS=$(find ${{ github.workspace }} -name "*.csproj" | xargs grep -l "MSTest\|xunit\|NUnit" 2>/dev/null)
+          TEST_PROJECTS=$(find ${{ github.workspace }} -name "*.csproj" | xargs grep -l "MSTest\|xunit\|NUnit" 2>/dev/null | sort -u)
 
           if [[ -z "$TEST_PROJECTS" ]]; then
             echo "⚠️ No test projects found."
