@@ -114,8 +114,8 @@ jobs:
         if: ${{ env.required_tests == 'true' }}
         uses: danielpalme/ReportGenerator-GitHub-Action@5.3.9
         with:
-          reports: ${{ env.TEST_RESULTS_DIR }}/**/coverage.cobertura.xml
-          targetdir: ${{ env.COVERAGE_REPORT_DIR }}
+          reports: '${{ env.TEST_RESULTS_DIR }}/**/coverage.cobertura.xml'
+          targetdir: '${{ env.COVERAGE_REPORT_DIR }}'
           reporttypes: 'Html;Cobertura'
           verbosity: 'Verbose'
           tag: '${{ github.run_number }}_${{ github.run_id }}'
