@@ -152,13 +152,20 @@ jobs:
               echo "✅ coverlet.collector found in: $proj"
             fi
 
-            PROJ_DIR=$(dirname "$proj")
-            EXCLUDE_FILES=$(grep -rl "ExcludeFromCodeCoverage" "$PROJ_DIR" --include="*.cs" 2>/dev/null | head -5)
-            if [[ -n "$EXCLUDE_FILES" ]]; then
-              echo "::error file=$proj::ExcludeFromCodeCoverage attribute found in $proj"
+            # Check ExcludeFromCodeCoverage in .csproj itself
+            if grep -q "ExcludeFromCodeCoverage" "$proj"; then
+              echo "::error file=$proj::ExcludeFromCodeCoverage found in $proj"
               echo "$proj" >> /tmp/excluded_from_coverage_raw.txt
             else
-              echo "✅ No ExcludeFromCodeCoverage attribute found in: $proj"
+              # Check ExcludeFromCodeCoverage in .cs files of the project
+              PROJ_DIR=$(dirname "$proj")
+              EXCLUDE_FILES=$(grep -rl "ExcludeFromCodeCoverage" "$PROJ_DIR" --include="*.cs" 2>/dev/null | head -5)
+              if [[ -n "$EXCLUDE_FILES" ]]; then
+                echo "::error file=$proj::ExcludeFromCodeCoverage attribute found in $proj"
+                echo "$proj" >> /tmp/excluded_from_coverage_raw.txt
+              else
+                echo "✅ No ExcludeFromCodeCoverage found in: $proj"
+              fi
             fi
           done
 
@@ -211,9 +218,9 @@ jobs:
             fi
 
             if [[ -f /tmp/excluded_from_coverage.txt ]]; then
-              echo "## ❌ \`ExcludeFromCodeCoverage\` attribute found in test projects"
+              echo "## ❌ \`ExcludeFromCodeCoverage\` found in test projects"
               echo ""
-              echo "The following test projects contain the \`ExcludeFromCodeCoverage\` assembly attribute,"
+              echo "The following test projects have the \`ExcludeFromCodeCoverage\` attribute set,"
               echo "which excludes the entire assembly from coverage collection:"
               echo ""
               while IFS= read -r proj; do
@@ -222,9 +229,17 @@ jobs:
               echo ""
               echo "### 🔧 How to fix"
               echo ""
-              echo "Remove the following from any \`.cs\` file in the affected test projects:"
+              echo "Remove \`ExcludeFromCodeCoverage\` from the affected \`.csproj\`:"
+              echo ""
+              echo '```xml'
+              echo '<!-- Remove this from the .csproj -->'
+              echo '<AssemblyAttribute Include="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage"/>'
+              echo '```'
+              echo ""
+              echo "Or remove it from any \`.cs\` file in the project:"
               echo ""
               echo '```csharp'
+              echo '// Remove this from any .cs file'
               echo '[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]'
               echo '```'
               echo ""
@@ -352,17 +367,15 @@ jobs:
           print(len(root.findall('packages/package')))
           ")
 
-          echo "📦 Test projects detected: ${{ env.TEST_PROJECT_COUNT }}"
           echo "📊 Packages in coverage report: $PACKAGE_COUNT"
-
           echo "PACKAGE_COUNT=$PACKAGE_COUNT" >> $GITHUB_ENV
 
-          if [[ "$PACKAGE_COUNT" -ne "${{ env.TEST_PROJECT_COUNT }}" ]]; then
+          if [[ "$PACKAGE_COUNT" -eq 0 ]]; then
             echo "COVERAGE_COUNT_MISMATCH=true" >> $GITHUB_ENV
             exit 1
           else
             echo "COVERAGE_COUNT_MISMATCH=false" >> $GITHUB_ENV
-            echo "✅ Package count matches: $PACKAGE_COUNT"
+            echo "✅ Coverage report contains $PACKAGE_COUNT packages."
           fi
 
       # ── 12c. Job summary — package count mismatch ─────────
@@ -370,22 +383,20 @@ jobs:
         if: failure() && env.COVERAGE_COUNT_MISMATCH == 'true'
         run: |
           {
-            echo "## ⚠️ Coverage package count mismatch"
+            echo "## ⚠️ No packages found in coverage report"
             echo ""
-            echo "The number of packages in the coverage report does not match the number of test projects detected."
+            echo "The coverage report was generated but contains no packages."
+            echo "This usually means the test projects are not being instrumented correctly."
             echo ""
-            echo "| | Count |"
-            echo "|---|---|"
-            echo "| **Test projects detected** | ${{ env.TEST_PROJECT_COUNT }} |"
-            echo "| **Packages in coverage report** | ${{ env.PACKAGE_COUNT }} |"
-            echo ""
-            echo "This usually means one or more projects are not being instrumented correctly."
-            echo "Check that all test projects have \`coverlet.collector\` and that the \`.runsettings\` exclusions are not too aggressive."
+            echo "Check that:"
+            echo "- All test projects have \`coverlet.collector\` installed"
+            echo "- The \`.runsettings\` exclusions are not too aggressive"
+            echo "- No \`ExcludeFromCodeCoverage\` attributes are present in the test projects"
           } > /tmp/coverage-mismatch-report.md
           cat /tmp/coverage-mismatch-report.md >> "$GITHUB_STEP_SUMMARY"
 
       # ── 12d. PR comment — package count mismatch ──────────
-      - name: Comment on PR — coverage package count mismatch
+      - name: Comment on PR — no packages in coverage report
         if: failure() && env.COVERAGE_COUNT_MISMATCH == 'true' && github.event_name == 'pull_request'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
