@@ -399,17 +399,17 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: build-test
-          append: true
+          recreate: true
           message: |
             ## ✅ All tests passed
 
             No test failures found in `${{ env.FULL_SOLUTION_PATH }}`.
 
-      # ── 19. PR comment — missing coverage report ──────────
-      - name: Add Missing Test as PR Comment
-        if: always() && hashFiles('coverage-table.md') == '' && github.event_name == 'pull_request' && env.required_tests == 'true'
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: build-test
-          append: true
-          message: '⚠️ Code coverage report not found. Tests required.'
+      # # ── 19. PR comment — missing coverage report ──────────
+      # - name: Add Missing Test as PR Comment
+      #   if: always() && hashFiles('coverage-table.md') == '' && github.event_name == 'pull_request' && env.required_tests == 'true'
+      #   uses: marocchino/sticky-pull-request-comment@v2
+      #   with:
+      #     header: build-test
+      #     append: true
+      #     message: '⚠️ Code coverage report not found. Tests required.'
