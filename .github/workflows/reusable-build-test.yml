@@ -151,7 +151,6 @@ jobs:
           fi
 
       # ── 5. Validate coverlet.collector ────────────────────
-      # ── 5. Validate coverlet.collector ────────────────────
       - name: Validate Coverlet Collector in Test Projects
         if: env.required_tests == 'true'
         run: |
@@ -250,6 +249,10 @@ jobs:
             echo "✅ Found .runsettings at: $RUNSETTINGS_PATH"
             echo "RUNSETTINGS_PATH=$RUNSETTINGS_PATH" >> $GITHUB_ENV
           fi
+
+      - name: Restore dependencies
+        if: env.required_tests == 'true'
+        run: dotnet restore "${{ env.FULL_SOLUTION_PATH }}"
 
       # ── 7. Run tests ───────────────────────────────────────
       - name: Generate Test Results and Coverage Reports
