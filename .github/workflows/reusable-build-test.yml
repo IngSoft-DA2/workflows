@@ -15,11 +15,6 @@ on:
         description: 'A title for the coverage report (default: Reporte de Cobertura)'
         required: false
         default: 'Reporte de Cobertura'
-      dotnet-version:
-        type: string
-        description: 'The .NET SDK version to use'
-        required: false
-        default: '8.0.x'
 
 permissions:
   contents: read
@@ -42,13 +37,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # ── 2. Setup .NET SDK ──────────────────────────────────
-      - name: Setup .NET ${{ inputs.dotnet-version }}
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ inputs.dotnet-version }}
-
-      # ── 3. Cache NuGet ─────────────────────────────────────
+      # ── 2. Cache NuGet ─────────────────────────────────────
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
@@ -57,7 +46,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      # ── 4. Validate solution file ──────────────────────────
+      # ── 3. Validate solution file ──────────────────────────
       - name: Validate solution file
         shell: bash
         run: |
@@ -67,15 +56,15 @@ jobs:
           fi
           echo "✅ Solution found: ${{ env.FULL_SOLUTION_PATH }}"
 
-      # ── 5. Restore dependencies ────────────────────────────
+      # ── 4. Restore dependencies ────────────────────────────
       - name: Install dependencies
         run: dotnet restore "${{ env.FULL_SOLUTION_PATH }}"
 
-      # ── 6. Build ───────────────────────────────────────────
+      # ── 5. Build ───────────────────────────────────────────
       - name: Run build
         run: dotnet build "${{ env.FULL_SOLUTION_PATH }}" --configuration Release --no-restore
 
-      # ── 7. Job summary ─────────────────────────────────────
+      # ── 6. Job summary ─────────────────────────────────────
       - name: Write job summary
         if: always()
         shell: bash
@@ -89,12 +78,11 @@ jobs:
             echo "|---|---|"
             echo "| **Solution** | \`${{ env.FULL_SOLUTION_PATH }}\` |"
             echo "| **Status** | ${STATUS} |"
-            echo "| **.NET SDK** | \`${{ inputs.dotnet-version }}\` |"
             echo "| **Runner** | \`${{ runner.os }}\` |"
             echo "| **Triggered by** | \`${{ github.event_name }}\` |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # ── 8. PR comment — failure ────────────────────────────
+      # ── 7. PR comment — failure ────────────────────────────
       - name: Comment on PR if Build Fails
         if: failure() && github.event_name == 'pull_request'
         uses: marocchino/sticky-pull-request-comment@v2
@@ -119,13 +107,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # ── 2. Setup .NET SDK ──────────────────────────────────
-      - name: Setup .NET ${{ inputs.dotnet-version }}
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ inputs.dotnet-version }}
-
-      # ── 3. Cache NuGet ─────────────────────────────────────
+      # ── 2. Cache NuGet ─────────────────────────────────────
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
@@ -134,7 +116,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-      # ── 4. Check for source code files ────────────────────
+      # ── 3. Check for source code files ────────────────────
       - name: Check for Source Code Files
         run: |
           SOURCE_FILES=$(find ${{ inputs.solution-path }} -type f -name "*.cs" \
@@ -151,7 +133,7 @@ jobs:
             echo "required_tests=false" >> $GITHUB_ENV
           fi
 
-      # ── 5. Validate coverlet.collector ────────────────────
+      # ── 4. Validate coverlet.collector ────────────────────
       - name: Validate Coverlet Collector in Test Projects
         if: env.required_tests == 'true'
         run: |
@@ -179,7 +161,7 @@ jobs:
             echo "COVERLET_FAILED=false" >> $GITHUB_ENV
           fi
 
-      # ── 5b. Job summary — missing coverlet ────────────────
+      # ── 4b. Job summary — missing coverlet ────────────────
       - name: Report Missing Coverlet Collector
         if: failure() && env.COVERLET_FAILED == 'true'
         run: |
@@ -206,40 +188,21 @@ jobs:
             echo ""
             echo "📚 See the full guide on setting up a test project correctly:"
             echo "[create-unit-test-project.md — Referenciar la Lógica de Negocio en el Proyecto de Pruebas](https://github.com/IngSoft-DA2/DA2-Tecnologia/blob/unit-testing/create-unit-test-project.md#-6-referenciar-la-l%C3%B3gica-de-negocio-en-el-proyecto-de-pruebas)"
-          } >> "$GITHUB_STEP_SUMMARY"
+            echo ""
+            echo "Check the full details in the [Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})."
+          } > /tmp/coverlet-report.md
+          cat /tmp/coverlet-report.md >> "$GITHUB_STEP_SUMMARY"
 
-      # ── 5c. PR comment — missing coverlet ─────────────────
+      # ── 4c. PR comment — missing coverlet ─────────────────
       - name: Comment on PR — missing coverlet.collector
         if: failure() && env.COVERLET_FAILED == 'true' && github.event_name == 'pull_request'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: build-test
           recreate: true
-          message: |
-            ## ❌ Missing `coverlet.collector` in test projects
+          path: '/tmp/coverlet-report.md'
 
-            The following test projects are missing the `coverlet.collector` package,
-            which is required for code coverage collection:
-
-            ${{ env.MISSING_COVERLET_PROJECTS }}
-
-            ### 🔧 How to fix
-
-            Add the following `PackageReference` to each affected `.csproj`:
-
-            ```xml
-                        <PackageReference Include="coverlet.collector" Version="6.0.2">
-                          <PrivateAssets>all</PrivateAssets>
-                          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-                        </PackageReference>
-            ```
-
-            📚 See the full guide on setting up a test project correctly:
-            [create-unit-test-project.md — Referenciar la Lógica de Negocio en el Proyecto de Pruebas](https://github.com/IngSoft-DA2/DA2-Tecnologia/blob/unit-testing/create-unit-test-project.md#-6-referenciar-la-l%C3%B3gica-de-negocio-en-el-proyecto-de-pruebas)
-
-            Check the full details in the [Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
-
-      # ── 6. Find .runsettings ───────────────────────────────
+      # ── 5. Find .runsettings ───────────────────────────────
       - name: Find .runsettings file
         run: |
           RUNSETTINGS_PATH=$(find ${{ github.workspace }} -name "*.runsettings" | head -1)
@@ -251,6 +214,7 @@ jobs:
             echo "RUNSETTINGS_PATH=$RUNSETTINGS_PATH" >> $GITHUB_ENV
           fi
 
+      # ── 6. Restore dependencies ───────────────────────────
       - name: Restore dependencies
         if: env.required_tests == 'true'
         run: dotnet restore "${{ env.FULL_SOLUTION_PATH }}"
@@ -294,7 +258,7 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: build-test
-          recreate: true
+          append: true
           message: |
             ## ❌ Tests failed
 
@@ -361,7 +325,6 @@ jobs:
             echo "|---|---|"
             echo "| **Solution** | \`${{ env.FULL_SOLUTION_PATH }}\` |"
             echo "| **Status** | ${STATUS} |"
-            echo "| **.NET SDK** | \`${{ inputs.dotnet-version }}\` |"
             echo "| **Runner** | \`${{ runner.os }}\` |"
             echo "| **Triggered by** | \`${{ github.event_name }}\` |"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -403,17 +366,17 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: build-test
-          recreate: true
+          append: true
           message: |
             ## ✅ All tests passed
 
             No test failures found in `${{ env.FULL_SOLUTION_PATH }}`.
 
-      # # ── 19. PR comment — missing coverage report ──────────
-      # - name: Add Missing Test as PR Comment
-      #   if: always() && hashFiles('coverage-table.md') == '' && github.event_name == 'pull_request' && env.required_tests == 'true'
-      #   uses: marocchino/sticky-pull-request-comment@v2
-      #   with:
-      #     header: build-test
-      #     append: true
-      #     message: '⚠️ Code coverage report not found. Tests required.'
+      # ── 19. PR comment — missing coverage report ──────────
+      - name: Add Missing Test as PR Comment
+        if: always() && hashFiles('coverage-table.md') == '' && github.event_name == 'pull_request' && env.required_tests == 'true'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: build-test
+          append: true
+          message: '⚠️ Code coverage report not found. Tests required.'
