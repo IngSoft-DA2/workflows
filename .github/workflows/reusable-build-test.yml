@@ -24,6 +24,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  checks: write
 
 env:
   FULL_SOLUTION_PATH: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
