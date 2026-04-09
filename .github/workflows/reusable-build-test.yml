@@ -411,5 +411,5 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: build-test
-          recreate: true
+          append: true
           message: '⚠️ Code coverage report not found. Tests required.'
