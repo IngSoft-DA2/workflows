@@ -1,53 +1,173 @@
+# ─────────────────────────────────────────────────────────
+# Reusable workflow: Clean Code Analysis (.NET / dotnet format)
+# ─────────────────────────────────────────────────────────
 on:
   workflow_call:
     inputs:
       solution-path:
         type: string
-        description: 'The relative path to the .sln file (default: current directory)'
+        description: 'Relative path to the folder containing the .sln file'
         required: false
         default: '.'
       solution-name:
         type: string
-        description: 'The name of the solution file (e.g., MyApp.sln)'
+        description: 'Name of the solution file (e.g. MyApp.sln)'
         required: true
+      dotnet-version:
+        type: string
+        description: 'The .NET SDK version to use'
+        required: false
+        default: '8.0.x'
+
+# ── Minimal permissions (principle of least privilege) ───
+permissions:
+  contents: read
+  pull-requests: write
 
 env:
-  DOTNET_VERSION: '8.0.x' # The .NET SDK version to use
   FULL_SOLUTION_PATH: ${{ inputs.solution-path }}/${{ inputs.solution-name }}
 
 jobs:
   analysis:
-    name: Analysis
+    name: Clean Code Analysis
     runs-on: self-hosted
-    # timeout-minutes: 5
-        
+    timeout-minutes: 10
+
     steps:
-      - name: Checkout Repository
+
+      # ── 1. Checkout ─────────────────────────────────────────
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run code analysis report
-        run: dotnet format ${{ env.FULL_SOLUTION_PATH }} --verify-no-changes --verbosity diagnostic --report ${{ inputs.solution-path }}/analysis
+      # ── 2. Setup .NET SDK ───────────────────────────────────
+      - name: Setup .NET ${{ inputs.dotnet-version }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
 
+      # ── 3. Cache NuGet packages ─────────────────────────────
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.props') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      # ── 4. Validate solution file exists ────────────────────
+      - name: Validate solution file
+        shell: bash
+        run: |
+          if [ ! -f "${{ env.FULL_SOLUTION_PATH }}" ]; then
+            echo "::error file=${{ env.FULL_SOLUTION_PATH }}::Solution file not found: ${{ env.FULL_SOLUTION_PATH }}"
+            exit 1
+          fi
+          echo "Solution found: ${{ env.FULL_SOLUTION_PATH }}"
+
+      # ── 5. Restore dependencies ─────────────────────────────
+      - name: Restore dependencies
+        run: dotnet restore "${{ env.FULL_SOLUTION_PATH }}"
+
+      # ── 6. Run code analysis ────────────────────────────────
+      - name: Run code analysis
+        run: |
+          dotnet format "${{ env.FULL_SOLUTION_PATH }}" \
+            --verify-no-changes \
+            --verbosity diagnostic \
+            --report "${{ inputs.solution-path }}/analysis"
+
+      # ── 7. Annotate PR with file-level issues ───────────────
+      - name: Annotate PR with issues
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = '${{ inputs.solution-path }}/analysis/format-report.json';
+            if (!fs.existsSync(reportPath)) { console.log('No report found'); return; }
+            const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            let count = 0;
+            for (const file of report) {
+              for (const change of (file.Changes || [])) {
+                core.warning(
+                  `[${change.FormatDescription ?? 'format issue'}]`,
+                  {
+                    file: file.FilePath?.replace(/\\/g, '/'),
+                    startLine: change.LineNumber ?? 1,
+                  }
+                );
+                count++;
+              }
+            }
+            console.log(`Total issues annotated: ${count}`);
+
+      # ── 8. Upload analysis report (always) ──────────────────
       - name: Upload code analysis report
-        if: ${{ always() }}
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Code Analysis Report
+          name: code-analysis-report
           path: ${{ inputs.solution-path }}/analysis/format-report.json
-          retention-days: 1
+          retention-days: 7
+          if-no-files-found: warn
 
-      # - name: Generate Clean Code Analysis Table Report
-      #   if: ${{ always() }}
-      #   uses: IngSoft-DA2/workflows/code-analysis-report/@action-clean-code-analysis-report-v1.0
-      #   with:
-      #     filename: ${{ inputs.solution-path }}/analysis/format-report.json
-            
-       # 📝 Comment on PR when blocked
-      - name: Comment on PR if Analysis Fail
-        if: ${{ failure() && github.event_name == 'pull_request' }}
+      # ── 9. Generate table report (opt-in) ───────────────────
+      - name: Generate clean code analysis table report
+        if: always()
+        uses: IngSoft-DA2/workflows/code-analysis-report/@action-clean-code-analysis-report-v1.0
+        with:
+          filename: ${{ inputs.solution-path }}/analysis/format-report.json
+
+      # ── 10. Write job summary ───────────────────────────────
+      - name: Write job summary
+        if: always()
+        shell: bash
+        run: |
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" = "success" ]; then ICON="✅"; else ICON="❌"; fi
+          {
+            echo "## ${ICON} Clean Code Analysis"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| **Solution** | \`${{ env.FULL_SOLUTION_PATH }}\` |"
+            echo "| **Status** | ${STATUS} |"
+            echo "| **.NET SDK** | \`${{ inputs.dotnet-version }}\` |"
+            echo "| **Runner** | \`${{ runner.os }}\` |"
+            echo "| **Triggered by** | \`${{ github.event_name }}\` |"
+            if [ "$STATUS" != "success" ]; then
+              echo ""
+              echo "> The analysis report artifact contains the full list of issues."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # ── 11a. PR comment — failure ───────────────────────────
+      - name: Comment on PR — analysis failed
+        if: failure() && github.event_name == 'pull_request'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: analysis
           recreate: true
           message: |
-            ❌ The clean code analysis failed. Please fix the issues before pushing again.
+            ## ❌ Clean code analysis failed
+
+            The `dotnet format` check found formatting issues. Please run the
+            following command locally to fix them before pushing:
+
+            ```sh
+            dotnet format ${{ env.FULL_SOLUTION_PATH }}
+            ```
+
+            The full report is attached as an artifact in the [Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+      # ── 11b. PR comment — success ───────────────────────────
+      - name: Comment on PR — analysis passed
+        if: success() && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: analysis
+          recreate: true
+          message: |
+            ## ✅ Clean code analysis passed
+
+            No formatting issues found in `${{ env.FULL_SOLUTION_PATH }}`.
