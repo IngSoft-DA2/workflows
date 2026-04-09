@@ -112,7 +112,7 @@ jobs:
       # ── 9. Generate table report ────────────────────────────
       - name: Generate clean code analysis table report
         if: always()
-        uses: IngSoft-DA2/workflows/code-analysis-report/@action-clean-code-analysis-report-v1.0
+        uses: IngSoft-DA2/workflows/code-analysis-report/@analysis-v1.1
         with:
           filename: ${{ inputs.solution-path }}/analysis/format-report.json
 
