@@ -13,11 +13,11 @@ on:
         type: string
         description: 'Name of the solution file (e.g. MyApp.sln)'
         required: true
-      dotnet-version:
-        type: string
-        description: 'The .NET SDK version to use'
-        required: false
-        default: '8.0.x'
+      # dotnet-version:
+      #   type: string
+      #   description: 'The .NET SDK version to use'
+      #   required: false
+      #   default: '8.0.x'
 
 permissions:
   contents: read
@@ -38,11 +38,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 2. Setup .NET SDK ───────────────────────────────────
-      - name: Setup .NET ${{ inputs.dotnet-version }}
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ inputs.dotnet-version }}
+      # # ── 2. Setup .NET SDK ───────────────────────────────────
+      # - name: Setup .NET ${{ inputs.dotnet-version }}
+      #   uses: actions/setup-dotnet@v4
+      #   with:
+      #     dotnet-version: ${{ inputs.dotnet-version }}
 
       # ── 3. Cache NuGet packages ─────────────────────────────
       - name: Cache NuGet packages
