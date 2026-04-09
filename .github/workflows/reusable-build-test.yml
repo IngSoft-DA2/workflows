@@ -155,7 +155,6 @@ jobs:
         if: env.required_tests == 'true'
         run: |
           MISSING_COVERLET=false
-          MISSING_PROJECTS=""
           TEST_PROJECTS=$(find ${{ github.workspace }} -name "*.csproj" | xargs grep -l "MSTest\|xunit\|NUnit" 2>/dev/null)
 
           if [[ -z "$TEST_PROJECTS" ]]; then
@@ -166,7 +165,7 @@ jobs:
           for proj in $TEST_PROJECTS; do
             if ! grep -q "coverlet.collector" "$proj"; then
               echo "::error file=$proj::Missing coverlet.collector in $proj"
-              MISSING_PROJECTS="$MISSING_PROJECTS\n- \`$proj\`"
+              echo "$proj" >> /tmp/missing_coverlet_projects.txt
               MISSING_COVERLET=true
             else
               echo "✅ coverlet.collector found in: $proj"
@@ -174,9 +173,6 @@ jobs:
           done
 
           if [[ "$MISSING_COVERLET" == "true" ]]; then
-            echo "MISSING_COVERLET_PROJECTS<<EOF" >> $GITHUB_ENV
-            echo -e "$MISSING_PROJECTS" >> $GITHUB_ENV
-            echo "EOF" >> $GITHUB_ENV
             echo "COVERLET_FAILED=true" >> $GITHUB_ENV
             exit 1
           else
@@ -193,7 +189,9 @@ jobs:
             echo "The following test projects are missing the \`coverlet.collector\` package,"
             echo "which is required for code coverage collection:"
             echo ""
-            echo -e "${{ env.MISSING_COVERLET_PROJECTS }}"
+            while IFS= read -r proj; do
+              echo "- \`$proj\`"
+            done < /tmp/missing_coverlet_projects.txt
             echo ""
             echo "### 🔧 How to fix"
             echo ""
