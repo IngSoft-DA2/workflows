@@ -149,7 +149,7 @@ jobs:
           path: '${{ env.COVERAGE_REPORT_DIR }}'
 
       - name: Generate Coverage Table
-        uses: IngSoft-DA2/workflows@v1.4
+        uses: IngSoft-DA2/workflows@v1.5
         if: ${{ env.required_tests == 'true' }}
         with:
           filename: '${{ env.COVERAGE_REPORT_DIR }}/Cobertura.xml'
