@@ -124,7 +124,7 @@ jobs:
             ! -name "*DbContext.cs" \
             ! -name "*Context.cs" \
             ! -path "*/Migrations/*")
-          
+
           if [[ -n "$SOURCE_FILES" ]]; then
             echo "🔍 Source code files found, tests will be required."
             echo "required_tests=true" >> $GITHUB_ENV
@@ -151,10 +151,26 @@ jobs:
             else
               echo "✅ coverlet.collector found in: $proj"
             fi
+
+            PROJ_DIR=$(dirname "$proj")
+            EXCLUDE_FILES=$(grep -rl "ExcludeFromCodeCoverage" "$PROJ_DIR" --include="*.cs" 2>/dev/null | head -5)
+            if [[ -n "$EXCLUDE_FILES" ]]; then
+              echo "::error file=$proj::ExcludeFromCodeCoverage attribute found in $proj"
+              echo "$proj" >> /tmp/excluded_from_coverage_raw.txt
+            else
+              echo "✅ No ExcludeFromCodeCoverage attribute found in: $proj"
+            fi
           done
 
           if [[ -f /tmp/missing_coverlet_projects_raw.txt ]]; then
             sort -u /tmp/missing_coverlet_projects_raw.txt > /tmp/missing_coverlet_projects.txt
+          fi
+
+          if [[ -f /tmp/excluded_from_coverage_raw.txt ]]; then
+            sort -u /tmp/excluded_from_coverage_raw.txt > /tmp/excluded_from_coverage.txt
+          fi
+
+          if [[ -f /tmp/missing_coverlet_projects.txt || -f /tmp/excluded_from_coverage.txt ]]; then
             echo "COVERLET_FAILED=true" >> $GITHUB_ENV
             exit 1
           else
@@ -168,29 +184,52 @@ jobs:
         if: failure() && env.COVERLET_FAILED == 'true'
         run: |
           {
-            echo "## ❌ Missing \`coverlet.collector\` in test projects"
-            echo ""
-            echo "The following test projects are missing the \`coverlet.collector\` package,"
-            echo "which is required for code coverage collection:"
-            echo ""
-            while IFS= read -r proj; do
-              echo "- \`$proj\`"
-            done < /tmp/missing_coverlet_projects.txt
-            echo ""
-            echo "### 🔧 How to fix"
-            echo ""
-            echo "Add the following \`PackageReference\` to each affected \`.csproj\`:"
-            echo ""
-            echo '```xml'
-            echo '<PackageReference Include="coverlet.collector" Version="6.0.2">'
-            echo '  <PrivateAssets>all</PrivateAssets>'
-            echo '  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>'
-            echo '</PackageReference>'
-            echo '```'
-            echo ""
-            echo "📚 See the full guide on setting up a test project correctly:"
-            echo "[create-unit-test-project.md — Referenciar la Lógica de Negocio en el Proyecto de Pruebas](https://github.com/IngSoft-DA2/DA2-Tecnologia/blob/unit-testing/create-unit-test-project.md#-6-referenciar-la-l%C3%B3gica-de-negocio-en-el-proyecto-de-pruebas)"
-            echo ""
+            if [[ -f /tmp/missing_coverlet_projects.txt ]]; then
+              echo "## ❌ Missing \`coverlet.collector\` in test projects"
+              echo ""
+              echo "The following test projects are missing the \`coverlet.collector\` package,"
+              echo "which is required for code coverage collection:"
+              echo ""
+              while IFS= read -r proj; do
+                echo "- \`$proj\`"
+              done < /tmp/missing_coverlet_projects.txt
+              echo ""
+              echo "### 🔧 How to fix"
+              echo ""
+              echo "Add the following \`PackageReference\` to each affected \`.csproj\`:"
+              echo ""
+              echo '```xml'
+              echo '<PackageReference Include="coverlet.collector" Version="6.0.2">'
+              echo '  <PrivateAssets>all</PrivateAssets>'
+              echo '  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>'
+              echo '</PackageReference>'
+              echo '```'
+              echo ""
+              echo "📚 See the full guide on setting up a test project correctly:"
+              echo "[create-unit-test-project.md — Referenciar la Lógica de Negocio en el Proyecto de Pruebas](https://github.com/IngSoft-DA2/DA2-Tecnologia/blob/unit-testing/create-unit-test-project.md#-6-referenciar-la-l%C3%B3gica-de-negocio-en-el-proyecto-de-pruebas)"
+              echo ""
+            fi
+
+            if [[ -f /tmp/excluded_from_coverage.txt ]]; then
+              echo "## ❌ \`ExcludeFromCodeCoverage\` attribute found in test projects"
+              echo ""
+              echo "The following test projects contain the \`ExcludeFromCodeCoverage\` assembly attribute,"
+              echo "which excludes the entire assembly from coverage collection:"
+              echo ""
+              while IFS= read -r proj; do
+                echo "- \`$proj\`"
+              done < /tmp/excluded_from_coverage.txt
+              echo ""
+              echo "### 🔧 How to fix"
+              echo ""
+              echo "Remove the following from any \`.cs\` file in the affected test projects:"
+              echo ""
+              echo '```csharp'
+              echo '[assembly: System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]'
+              echo '```'
+              echo ""
+            fi
+
             echo "Check the full details in the [Actions run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})."
           } > /tmp/coverlet-report.md
           cat /tmp/coverlet-report.md >> "$GITHUB_STEP_SUMMARY"
