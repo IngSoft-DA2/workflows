@@ -28,7 +28,7 @@ env:
 
 jobs:
   analysis:
-    name: Clean Code Analysis
+    name: Analysis
     runs-on: self-hosted
     timeout-minutes: 10
 
