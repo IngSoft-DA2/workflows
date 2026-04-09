@@ -100,15 +100,10 @@ jobs:
           recreate: true
           message: |
             ❌ The tests failed. Please fix the issues before pushing again.
-      - name: Debug Coverage Files
+
+      - name: Debug ReportGenerator Input
         if: ${{ env.required_tests == 'true' }}
-        run: |
-          echo "=== TRX files ==="
-          find ${{ github.workspace }}/test-results -name "*.trx"
-          echo "=== Coverage XML files ==="
-          find ${{ github.workspace }}/test-results -name "*.xml"
-          echo "=== All test-results content ==="
-          find ${{ github.workspace }}/test-results -type f
+        run: find ${{ env.TEST_RESULTS_DIR }} -name "coverage.cobertura.xml" | xargs wc -l
 
       - name: Join Coverage Reports
         if: ${{ env.required_tests == 'true' }}
@@ -126,13 +121,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Coverage Report       
-          path: ${{ env.COVERAGE_REPORT_DIR }}
+          path: '${{ env.COVERAGE_REPORT_DIR }}'
 
       - name: Generate Coverage Table
-        uses: IngSoft-DA2/workflows@v1.5
-        if: ${{ env.required_tests == 'true'}}
+        uses: IngSoft-DA2/workflows@v1.4
+        if: ${{ env.required_tests == 'true' }}
         with:
-          filename: ${{ env.COVERAGE_REPORT_DIR }}/Cobertura.xml
+          filename: '${{ env.COVERAGE_REPORT_DIR }}/Cobertura.xml'
           threshold: 90
 
       - name: Write Coverage Table to Job Summary
