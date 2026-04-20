@@ -137,6 +137,14 @@ jobs:
       - name: Validate Coverlet Collector in Test Projects
         if: env.required_tests == 'true'
         run: |
+          # Clean up temp files from previous runs
+          rm -f /tmp/missing_coverlet_projects_raw.txt
+          rm -f /tmp/missing_coverlet_projects.txt
+          rm -f /tmp/excluded_from_coverage_raw.txt
+          rm -f /tmp/excluded_from_coverage.txt
+          rm -f /tmp/coverlet-report.md
+          rm -f /tmp/coverage-mismatch-report.md
+
           TEST_PROJECTS=$(find ${{ github.workspace }} -name "*.csproj" | xargs grep -l "MSTest\|xunit\|NUnit" 2>/dev/null | sort -u)
 
           if [[ -z "$TEST_PROJECTS" ]]; then
